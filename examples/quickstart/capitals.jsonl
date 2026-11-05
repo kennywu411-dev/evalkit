@@ -1,0 +1,24 @@
+{"id": "cap-00", "input": "中国的首都是哪里？", "expected": "北京", "tags": {"region": "asia"}}
+{"id": "cap-01", "input": "日本的首都是哪里？", "expected": "东京", "tags": {"region": "asia"}}
+{"id": "cap-02", "input": "韩国的首都是哪里？", "expected": "首尔", "tags": {"region": "asia"}}
+{"id": "cap-03", "input": "印度的首都是哪里？", "expected": "新德里", "tags": {"region": "asia"}}
+{"id": "cap-04", "input": "泰国的首都是哪里？", "expected": "曼谷", "tags": {"region": "asia"}}
+{"id": "cap-05", "input": "越南的首都是哪里？", "expected": "河内", "tags": {"region": "asia"}}
+{"id": "cap-06", "input": "法国的首都是哪里？", "expected": "巴黎", "tags": {"region": "europe"}}
+{"id": "cap-07", "input": "德国的首都是哪里？", "expected": "柏林", "tags": {"region": "europe"}}
+{"id": "cap-08", "input": "意大利的首都是哪里？", "expected": "罗马", "tags": {"region": "europe"}}
+{"id": "cap-09", "input": "西班牙的首都是哪里？", "expected": "马德里", "tags": {"region": "europe"}}
+{"id": "cap-10", "input": "英国的首都是哪里？", "expected": "伦敦", "tags": {"region": "europe"}}
+{"id": "cap-11", "input": "荷兰的首都是哪里？", "expected": "阿姆斯特丹", "tags": {"region": "europe"}}
+{"id": "cap-12", "input": "美国的首都是哪里？", "expected": "华盛顿", "tags": {"region": "americas"}}
+{"id": "cap-13", "input": "加拿大的首都是哪里？", "expected": "渥太华", "tags": {"region": "americas"}}
+{"id": "cap-14", "input": "巴西的首都是哪里？", "expected": "巴西利亚", "tags": {"region": "americas"}}
+{"id": "cap-15", "input": "阿根廷的首都是哪里？", "expected": "布宜诺斯艾利斯", "tags": {"region": "americas"}}
+{"id": "cap-16", "input": "墨西哥的首都是哪里？", "expected": "墨西哥城", "tags": {"region": "americas"}}
+{"id": "cap-17", "input": "智利的首都是哪里？", "expected": "圣地亚哥", "tags": {"region": "americas"}}
+{"id": "cap-18", "input": "埃及的首都是哪里？", "expected": "开罗", "tags": {"region": "africa"}}
+{"id": "cap-19", "input": "肯尼亚的首都是哪里？", "expected": "内罗毕", "tags": {"region": "africa"}}
+{"id": "cap-20", "input": "尼日利亚的首都是哪里？", "expected": "阿布贾", "tags": {"region": "africa"}}
+{"id": "cap-21", "input": "南非的首都是哪里？", "expected": ["比勒陀利亚", "开普敦"], "tags": {"region": "africa"}}
+{"id": "cap-22", "input": "摩洛哥的首都是哪里？", "expected": "拉巴特", "tags": {"region": "africa"}}
+{"id": "cap-23", "input": "埃塞俄比亚的首都是哪里？", "expected": "亚的斯亚贝巴", "tags": {"region": "africa"}}

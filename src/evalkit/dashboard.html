@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1d232b; --muted: #5f6b7a; --line: #e2e6eb;
+  --accent: #2f6fdb; --accent-soft: #e6eefc; --good: #1f8a4c; --good-soft: #e3f4ea;
+  --bad: #c2412d; --bad-soft: #fbe9e5; --warn: #a86b00; --bar: #8fb0ee; --bar2: #2f6fdb;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161c; --panel: #1a2029; --ink: #e5e9ef; --muted: #98a3b3; --line: #2b3440;
+    --accent: #6c9cf0; --accent-soft: #22324d; --good: #52c07f; --good-soft: #1b3426;
+    --bad: #ef7a63; --bad-soft: #3d231e; --warn: #e0a640; --bar: #3d5f9e; --bar2: #6c9cf0;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
+header { padding: 20px 24px 0; max-width: 1280px; margin: 0 auto; }
+h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: .01em; }
+.sub { color: var(--muted); font-size: 13px; }
+nav { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+nav button { border: 0; background: none; color: var(--muted); padding: 10px 14px; font: inherit;
+  cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+nav button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+main { max-width: 1280px; margin: 0 auto; padding: 20px 24px 48px; }
+section { display: none; } section.on { display: block; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.card h2 { font-size: 15px; margin: 0 0 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+select, input { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 8px; min-width: 200px; max-width: 100%; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+tr.click { cursor: pointer; } tr.click:hover td { background: var(--accent-soft); }
+tr.sel td { background: var(--accent-soft); }
+.group { font-size: 12px; color: var(--muted); }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.mute { background: var(--accent-soft); color: var(--accent); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.kpi { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.kpi .v { font-size: 22px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.kpi .d { font-size: 12px; color: var(--muted); }
+.up { color: var(--good); } .down { color: var(--bad); }
+.split { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: 16px; }
+@media (max-width: 820px) { .split { grid-template-columns: 1fr; } header, main { padding-left: 16px; padding-right: 16px; } select { min-width: 0; width: 100%; } }
+.list { max-height: 640px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+.list div { padding: 8px 10px; border-bottom: 1px solid var(--line); cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.list div:hover, .list div.sel { background: var(--accent-soft); }
+pre { font-family: var(--mono); font-size: 12px; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px; overflow: auto; max-height: 420px; white-space: pre-wrap; word-break: break-all; margin: 6px 0 14px; }
+.muted { color: var(--muted); }
+.bars { display: grid; grid-template-columns: minmax(140px, 260px) 1fr; gap: 6px 12px; align-items: center; }
+.bars .lab { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bars .track { position: relative; height: 18px; }
+.bars .b { position: absolute; top: 3px; height: 12px; border-radius: 3px; background: var(--bar2); }
+.bars .b2 { background: var(--bar); top: 3px; }
+.bars .val { position: absolute; top: 0; font-size: 11px; color: var(--muted); white-space: nowrap; }
+svg text { fill: var(--muted); font-size: 11px; }
+.legend { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 4px 0 10px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <div class="sub" id="subtitle"></div>
+  <nav>
+    <button data-tab="runs" class="on">实验列表</button>
+    <button data-tab="compare">指标对比</button>
+    <button data-tab="replay">失败回放</button>
+    <button data-tab="cost">成本与延迟</button>
+  </nav>
+</header>
+<main>
+  <section id="runs" class="on">
+    <div class="card"><h2>全部实验</h2><div class="tablewrap"><table id="runTable"></table></div></div>
+    <div class="card" id="runDetail"></div>
+  </section>
+
+  <section id="compare">
+    <div class="card">
+      <div class="row">
+        <label>基线 A<select id="cmpA"></select></label>
+        <label>候选 B<select id="cmpB"></select></label>
+        <label>重复轮次<select id="cmpRep"></select></label>
+      </div>
+      <p class="muted" style="margin:10px 0 0">只比较两边都有的题；p 值为双侧 McNemar 精确检验，只看两边判分不一致的题。</p>
+    </div>
+    <div id="cmpOut"></div>
+  </section>
+
+  <section id="replay">
+    <div class="card">
+      <div class="row">
+        <label>实验 · 变体<select id="rpRun"></select></label>
+        <label>重复轮次<select id="rpRep"></select></label>
+        <label>状态<select id="rpStatus"></select></label>
+        <label>子集<select id="rpSlice"></select></label>
+        <label>搜索题目 id<input id="rpSearch" placeholder="如 1471 或 goods-r1"></label>
+      </div>
+    </div>
+    <div class="split">
+      <div class="card"><h2 id="rpCount">失败题</h2><div class="list" id="rpList"></div></div>
+      <div class="card" id="rpDetail"><span class="muted">从左侧选一道题查看输出、判分和过程。</span></div>
+    </div>
+  </section>
+
+  <section id="cost">
+    <div class="card"><h2>单题成本</h2><div class="legend"><i style="background:var(--bar2)"></i>平均<i style="background:var(--bar)"></i>P50</div><div class="bars" id="costBars"></div></div>
+    <div class="card"><h2>延迟</h2><div class="legend"><i style="background:var(--bar)"></i>P50<i style="background:var(--bar2)"></i>P95</div><div class="bars" id="latBars"></div></div>
+    <div class="card"><h2>通过率 × 单题成本</h2><div id="scatter"></div><p class="muted" style="margin:6px 0 0">越靠左上越划算。同一评测集内比较才有意义。</p></div>
+  </section>
+</main>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const $ = s => document.querySelector(s);
+const stLabel = s => s === 'ok' ? '判错' : s;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct = (x, d = 1) => x == null ? '—' : (x * 100).toFixed(d) + '%';
+const money = x => '$' + (x >= 1 ? x.toFixed(2) : x >= 0.01 ? x.toFixed(4) : x.toFixed(5));
+const secs = x => x >= 100 ? x.toFixed(0) + 's' : x.toFixed(1) + 's';
+
+// 每个 (运行, 变体) 是一个可选对象
+const ENTRIES = [];
+DATA.runs.forEach((run, ri) => run.summary.forEach(s => ENTRIES.push({ key: ri + '|' + s.variant, run, s, label: `${run.group} / ${run.id} · ${s.variant}` })));
+const byKey = k => ENTRIES.find(e => e.key === k);
+
+$('#title').textContent = DATA.title;
+$('#subtitle').textContent = `${DATA.runs.length} 次运行 · ${ENTRIES.length} 个实验变体 · 数字由运行记录现算`;
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('section').forEach(x => x.classList.toggle('on', x.id === b.dataset.tab));
+});
+
+// ---------- 统计 ----------
+const LF = [0];
+function logFact(n) { while (LF.length <= n) LF.push(LF[LF.length - 1] + Math.log(LF.length)); return LF[n]; }
+function mcnemar(b, c) {
+  const n = b + c; if (n === 0) return 1;
+  const k = Math.min(b, c); let p = 0;
+  for (let i = 0; i <= k; i++) p += Math.exp(logFact(n) - logFact(i) - logFact(n - i) - n * Math.LN2);
+  return Math.min(1, 2 * p);
+}
+function rowsOf(e, rep) { return e.run.rows.filter(r => r.v === e.s.variant && (rep === 'all' || r.r === +rep)); }
+function reps(e) { return [...new Set(e.run.rows.filter(r => r.v === e.s.variant).map(r => r.r))].sort((a, b) => a - b); }
+
+// ---------- 实验列表 ----------
+let selected = ENTRIES[0]?.key;
+function renderRuns() {
+  const head = '<tr><th>实验</th><th>变体</th><th>评测集</th><th class="num">题次</th><th class="num">通过率</th><th class="num">95% CI</th><th class="num">单题成本</th><th class="num">总成本</th><th class="num">P50 / P95</th><th>状态</th></tr>';
+  const body = ENTRIES.map(e => {
+    const s = e.s, bad = Object.entries(s.status).filter(([k]) => k !== 'ok');
+    return `<tr class="click ${e.key === selected ? 'sel' : ''}" data-k="${esc(e.key)}">
+      <td><div>${esc(e.run.id)}</div><div class="group">${esc(e.run.group)}</div></td><td>${esc(s.variant)}</td>
+      <td>${esc(e.run.dataset)}${e.run.dataset_hash ? ' <span class="muted">' + esc(e.run.dataset_hash) + '</span>' : ''}</td>
+      <td class="num">${s.n}${s.repeats > 1 ? ' <span class="muted">×' + s.repeats + '</span>' : ''}</td>
+      <td class="num"><b>${pct(s.rate)}</b></td><td class="num muted">${pct(s.ci95[0])}–${pct(s.ci95[1])}</td>
+      <td class="num">${money(s.cost_per_item)}</td><td class="num">${money(s.cost_total)}</td>
+      <td class="num">${secs(s.latency_p50)} / ${secs(s.latency_p95)}</td>
+      <td>${bad.length ? bad.map(([k, v]) => `<span class="pill bad">${esc(k)} ${v}</span>`).join(' ') : '<span class="pill good">全部正常</span>'}</td></tr>`;
+  }).join('');
+  $('#runTable').innerHTML = head + body;
+  document.querySelectorAll('#runTable tr.click').forEach(tr => tr.onclick = () => { selected = tr.dataset.k; renderRuns(); });
+  renderRunDetail();
+}
+function renderRunDetail() {
+  const e = byKey(selected); if (!e) return;
+  const s = e.s, params = e.run.variants[s.variant] || {};
+  let html = `<h2>${esc(e.run.id)} · ${esc(s.variant)}</h2>
+    <div class="kpis">
+      <div class="kpi"><div class="k">主指标（${esc(e.run.primary || 'passed')}）</div><div class="v">${pct(s.rate)}</div><div class="d">${s.passed}/${s.n}，95% CI ${pct(s.ci95[0])}–${pct(s.ci95[1])}</div></div>
+      <div class="kpi"><div class="k">总成本</div><div class="v">${money(s.cost_total)}</div><div class="d">单题 ${money(s.cost_per_item)}，P50 ${money(s.cost_p50)}</div></div>
+      <div class="kpi"><div class="k">延迟 P50 / P95</div><div class="v">${secs(s.latency_p50)}</div><div class="d">P95 ${secs(s.latency_p95)}</div></div>
+      <div class="kpi"><div class="k">重复次数</div><div class="v">${s.repeats}</div><div class="d">代码版本 ${esc(e.run.code_version || '—')}</div></div>
+    </div>`;
+  const m = e.run.metrics[s.variant];
+  if (m) html += `<h2 style="margin-top:18px">自定义指标</h2><div class="kpis">${Object.entries(m).map(([k, v]) => `<div class="kpi"><div class="k">${esc(k)}</div><div class="v">${typeof v === 'number' ? pct(v) : esc(v)}</div></div>`).join('')}</div>`;
+  if (s.slices) for (const [name, vals] of Object.entries(s.slices)) {
+    html += `<h2 style="margin-top:18px">按 ${esc(name)} 拆分</h2><div class="tablewrap"><table><tr><th>${esc(name)}</th><th class="num">题次</th><th class="num">通过率</th><th class="num">95% CI</th><th style="width:40%"></th></tr>` +
+      Object.entries(vals).map(([v, b]) => `<tr><td>${esc(v)}</td><td class="num">${b.n}</td><td class="num">${pct(b.rate)}</td><td class="num muted">${pct(b.ci95[0])}–${pct(b.ci95[1])}</td>
+      <td><div style="background:var(--accent-soft);border-radius:3px;height:10px"><div style="width:${(b.rate * 100).toFixed(1)}%;background:var(--bar2);height:10px;border-radius:3px"></div></div></td></tr>`).join('') + '</table></div>';
+  }
+  if (Object.keys(params).length) html += `<h2 style="margin-top:18px">配置快照</h2><pre>${esc(JSON.stringify(params, null, 1))}</pre>`;
+  $('#runDetail').innerHTML = html;
+}
+
+// ---------- 指标对比 ----------
+function fillSelect(sel, items, value) {
+  sel.innerHTML = items.map(([v, t]) => `<option value="${esc(v)}">${esc(t)}</option>`).join('');
+  if (value != null && items.some(([v]) => String(v) === String(value))) sel.value = value;
+}
+function initCompare() {
+  fillSelect($('#cmpA'), ENTRIES.map(e => [e.key, e.label]));
+  $('#cmpA').onchange = () => { syncB(); renderCompare(); };
+  $('#cmpB').onchange = () => { syncRep(); renderCompare(); };
+  $('#cmpRep').onchange = renderCompare;
+  syncB(); renderCompare();
+}
+function syncB() {
+  const a = byKey($('#cmpA').value);
+  const same = ENTRIES.filter(e => e.key !== a.key && e.run.dataset === a.run.dataset);
+  const prev = $('#cmpB').value;
+  fillSelect($('#cmpB'), same.map(e => [e.key, e.label]), prev);
+  syncRep();
+}
+function syncRep() {
+  const a = byKey($('#cmpA').value), b = byKey($('#cmpB').value);
+  if (!b) { fillSelect($('#cmpRep'), [['0', '0']]); return; }
+  const common = reps(a).filter(r => reps(b).includes(r));
+  fillSelect($('#cmpRep'), (common.length ? common : [0]).map(r => [r, '第 ' + (r + 1) + ' 次']), $('#cmpRep').value);
+}
+function pairBlock(ids, A, B) {
+  const n = ids.length; let ka = 0, kb = 0; const aOnly = [], bOnly = [];
+  for (const i of ids) { const x = A.get(i).p, y = B.get(i).p; ka += x; kb += y; if (x && !y) aOnly.push(i); if (y && !x) bOnly.push(i); }
+  return { n, ra: n ? ka / n : 0, rb: n ? kb / n : 0, aOnly, bOnly, p: mcnemar(aOnly.length, bOnly.length) };
+}
+function renderCompare() {
+  const a = byKey($('#cmpA').value), b = byKey($('#cmpB').value);
+  if (!b) { $('#cmpOut').innerHTML = '<div class="card muted">同一评测集下只有这一个实验，没有可比较的对象。</div>'; return; }
+  const rep = $('#cmpRep').value;
+  const A = new Map(rowsOf(a, rep).map(r => [String(r.i), r])), B = new Map(rowsOf(b, rep).map(r => [String(r.i), r]));
+  const ids = [...A.keys()].filter(i => B.has(i));
+  if (!ids.length) { $('#cmpOut').innerHTML = '<div class="card muted">两次运行没有共同的题目。</div>'; return; }
+  const blk = pairBlock(ids, A, B), d = blk.rb - blk.ra;
+  const sum = (M, f) => ids.reduce((t, i) => t + (M.get(i)[f] || 0), 0);
+  const ca = sum(A, 'c'), cb = sum(B, 'c');
+  const sig = blk.p < 0.05;
+  let html = `<div class="card"><div class="kpis">
+    <div class="kpi"><div class="k">共同题目</div><div class="v">${blk.n}</div><div class="d">A 独有 ${A.size - blk.n}，B 独有 ${B.size - blk.n}</div></div>
+    <div class="kpi"><div class="k">通过率 A → B</div><div class="v">${pct(blk.ra)} → ${pct(blk.rb)}</div><div class="d ${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d >= 0 ? '+' : ''}${(d * 100).toFixed(1)} 个百分点</div></div>
+    <div class="kpi"><div class="k">McNemar p</div><div class="v">${blk.p < 0.001 ? blk.p.toExponential(1) : blk.p.toFixed(3)}</div><div class="d">${sig ? '<span class="pill ' + (d > 0 ? 'good' : 'bad') + '">差异显著</span>' : '<span class="pill mute">在噪声范围内</span>'}</div></div>
+    <div class="kpi"><div class="k">A 独对 / B 独对</div><div class="v">${blk.aOnly.length} / ${blk.bOnly.length}</div><div class="d">只有这些题决定差异</div></div>
+    <div class="kpi"><div class="k">花费 A → B</div><div class="v">${money(ca)} → ${money(cb)}</div><div class="d">${ca > 0 ? ((cb / ca - 1) * 100).toFixed(0) + '%' : ''}</div></div>
+  </div></div>`;
+  const slices = a.run.slices.filter(s => b.run.slices.includes(s));
+  for (const s of slices) {
+    const vals = [...new Set(ids.map(i => String(A.get(i).t[s])))].sort();
+    html += `<div class="card"><h2>按 ${esc(s)} 拆分</h2><div class="tablewrap"><table><tr><th>${esc(s)}</th><th class="num">题数</th><th class="num">A</th><th class="num">B</th><th class="num">差值</th><th class="num">A 独对 / B 独对</th><th class="num">p</th></tr>` +
+      vals.map(v => { const k = pairBlock(ids.filter(i => String(A.get(i).t[s]) === v), A, B), dd = k.rb - k.ra;
+        return `<tr><td>${esc(v)}</td><td class="num">${k.n}</td><td class="num">${pct(k.ra)}</td><td class="num">${pct(k.rb)}</td><td class="num ${dd > 0 ? 'up' : dd < 0 ? 'down' : ''}">${dd >= 0 ? '+' : ''}${(dd * 100).toFixed(1)}</td><td class="num">${k.aOnly.length} / ${k.bOnly.length}</td><td class="num">${k.p.toFixed(3)}</td></tr>`; }).join('') + '</table></div></div>';
+  }
+  const flipList = (title, list, e) => `<div class="card"><h2>${title}（${list.length}）</h2><div>${list.slice(0, 300).map(i => `<a href="#" class="pill mute" data-jump="${esc(e.key)}" data-id="${esc(i)}" style="margin:0 4px 4px 0;text-decoration:none">${esc(i)}</a>`).join('') || '<span class="muted">无</span>'}</div></div>`;
+  html += flipList('A 对、B 错的题 → 点击在失败回放中查看 B', blk.aOnly, b) + flipList('B 对、A 错的题 → 点击查看 A', blk.bOnly, a);
+  $('#cmpOut').innerHTML = html;
+  document.querySelectorAll('[data-jump]').forEach(x => x.onclick = ev => { ev.preventDefault(); jumpReplay(x.dataset.jump, x.dataset.id, rep); });
+}
+
+// ---------- 失败回放 ----------
+let rpSel = null;
+function initReplay() {
+  fillSelect($('#rpRun'), ENTRIES.map(e => [e.key, e.label]));
+  $('#rpRun').onchange = () => { syncReplayFilters(); renderReplay(); };
+  ['#rpRep', '#rpStatus', '#rpSlice'].forEach(s => $(s).onchange = renderReplay);
+  $('#rpSearch').oninput = renderReplay;
+  syncReplayFilters(); renderReplay();
+}
+function syncReplayFilters() {
+  const e = byKey($('#rpRun').value);
+  fillSelect($('#rpRep'), [['all', '全部'], ...reps(e).map(r => [r, '第 ' + (r + 1) + ' 次'])]);
+  const fails = e.run.rows.filter(r => r.v === e.s.variant && !r.p);
+  const st = [...new Set(fails.map(r => r.s))].sort();
+  fillSelect($('#rpStatus'), [['all', '全部状态'], ...st.map(s => [s, stLabel(s) + '（' + fails.filter(r => r.s === s).length + '）'])]);
+  const sl = [['all', '全部']];
+  for (const k of e.run.slices) for (const v of [...new Set(fails.map(r => String(r.t[k])))].sort()) sl.push([k + '=' + v, k + ' = ' + v]);
+  fillSelect($('#rpSlice'), sl);
+}
+function renderReplay() {
+  const e = byKey($('#rpRun').value), rep = $('#rpRep').value, st = $('#rpStatus').value, sl = $('#rpSlice').value, q = $('#rpSearch').value.trim();
+  let fails = rowsOf(e, rep).filter(r => !r.p);
+  if (st !== 'all') fails = fails.filter(r => r.s === st);
+  if (sl !== 'all') { const [k, v] = sl.split('='); fails = fails.filter(r => String(r.t[k]) === v); }
+  if (q) fails = fails.filter(r => String(r.i).includes(q));
+  $('#rpCount').textContent = `失败题 ${fails.length}`;
+  $('#rpList').innerHTML = fails.slice(0, 1000).map((r, idx) => `<div data-idx="${idx}" class="${rpSel === r ? 'sel' : ''}"><span>${esc(r.i)}${rep === 'all' ? ' <span class="muted">#' + (r.r + 1) + '</span>' : ''}</span><span class="pill bad">${esc(stLabel(r.s))}</span></div>`).join('') || '<div class="muted">没有符合条件的失败题</div>';
+  document.querySelectorAll('#rpList [data-idx]').forEach(div => div.onclick = () => { rpSel = fails[+div.dataset.idx]; renderReplay(); });
+  renderReplayDetail(e);
+}
+function renderReplayDetail(e) {
+  const r = rpSel;
+  if (!r || r.v !== e.s.variant) { $('#rpDetail').innerHTML = '<span class="muted">从左侧选一道题查看输出、判分和过程。</span>'; return; }
+  const tags = Object.entries(r.t).map(([k, v]) => `<span class="pill mute">${esc(k)}: ${esc(v)}</span>`).join(' ');
+  $('#rpDetail').innerHTML = `<h2>${esc(r.i)} <span class="pill bad">${esc(stLabel(r.s))}</span></h2>
+    <div style="margin-bottom:10px">${tags} <span class="muted">· 第 ${r.r + 1} 次 · ${money(r.c)} · ${secs(r.l)}</span></div>
+    ${r.e ? `<div class="muted">错误</div><pre>${esc(r.e)}</pre>` : ''}
+    <div class="muted">判分</div><pre>${esc(r.sc || '—')}</pre>
+    <div class="muted">模型输出</div><pre>${esc(r.o ?? '（未保存）')}</pre>
+    <div class="muted">过程</div><pre>${esc(r.tr ?? '（未保存）')}</pre>`;
+}
+function jumpReplay(key, id, rep) {
+  document.querySelector('nav button[data-tab="replay"]').click();
+  $('#rpRun').value = key; syncReplayFilters();
+  if ([...$('#rpRep').options].some(o => o.value === String(rep))) $('#rpRep').value = rep;
+  const e = byKey(key);
+  rpSel = rowsOf(e, $('#rpRep').value).find(r => String(r.i) === String(id)) || null;
+  $('#rpSearch').value = id; renderReplay();
+}
+
+// ---------- 成本与延迟 ----------
+function bars(el, items, fmt, keys) {
+  // 每个实验两根细条：上 = keys[0]，下 = keys[1]
+  const max = Math.max(...items.flatMap(it => keys.map(k => it[k]))) || 1;
+  const [k1, k2] = keys;
+  el.innerHTML = items.map(it => {
+    const w1 = it[k1] / max * 80, w2 = it[k2] / max * 80;
+    return `<div class="lab" title="${esc(it.label)}">${esc(it.label)}</div><div class="track">
+      <div class="b ${keys === COST_KEYS ? '' : 'b2'}" style="top:2px;height:6px;width:${w1}%"></div>
+      <div class="b ${keys === COST_KEYS ? 'b2' : ''}" style="top:10px;height:6px;width:${w2}%"></div>
+      <span class="val" style="left:calc(${Math.max(w1, w2)}% + 6px)">${fmt(it[k1])} / ${fmt(it[k2])}</span></div>`;
+  }).join('');
+}
+const COST_KEYS = ['mean', 'p50'], LAT_KEYS = ['l50', 'l95'];
+function renderCost() {
+  const items = ENTRIES.map(e => ({ label: e.label, mean: e.s.cost_per_item, p50: e.s.cost_p50, l50: e.s.latency_p50, l95: e.s.latency_p95, rate: e.s.rate, ds: e.run.dataset }));
+  bars($('#costBars'), items, money, COST_KEYS);
+  bars($('#latBars'), items, secs, LAT_KEYS);
+  const W = 720, H = 300, P = 44;
+  const xs = items.map(i => i.mean).filter(x => x > 0), lx = x => Math.log10(Math.max(x, 1e-6));
+  const x0 = Math.floor(lx(Math.min(...xs, 1e-4))), x1 = Math.ceil(lx(Math.max(...xs, 1e-3)));
+  const sx = x => P + (lx(x) - x0) / (x1 - x0 || 1) * (W - 2 * P), sy = y => H - P - y * (H - 2 * P);
+  const dss = [...new Set(items.map(i => i.ds))];
+  const colors = ['var(--bar2)', 'var(--good)', 'var(--warn)', 'var(--bad)'];
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="通过率与单题成本散点图">`;
+  for (let t = x0; t <= x1; t++) svg += `<line x1="${sx(10 ** t)}" x2="${sx(10 ** t)}" y1="${P}" y2="${H - P}" stroke="var(--line)"/><text x="${sx(10 ** t)}" y="${H - P + 16}" text-anchor="middle">$${10 ** t >= 1 ? 10 ** t : (10 ** t).toFixed(-t)}</text>`;
+  for (let y = 0; y <= 1.0001; y += 0.25) svg += `<line x1="${P}" x2="${W - P}" y1="${sy(y)}" y2="${sy(y)}" stroke="var(--line)"/><text x="${P - 6}" y="${sy(y) + 4}" text-anchor="end">${y * 100}%</text>`;
+  items.forEach(i => { if (i.mean > 0) svg += `<circle cx="${sx(i.mean)}" cy="${sy(i.rate)}" r="5" fill="${colors[dss.indexOf(i.ds) % colors.length]}" fill-opacity=".8"><title>${esc(i.label)}：${pct(i.rate)}，${money(i.mean)}/题</title></circle>`; });
+  svg += `<text x="${W / 2}" y="${H - 6}" text-anchor="middle">单题成本（对数刻度）</text></svg>`;
+  $('#scatter').innerHTML = `<div class="legend">${dss.map((d, k) => `<i style="background:${colors[k % colors.length]}"></i>${esc(d)}`).join('')}</div>` + svg;
+}
+
+renderRuns(); initCompare(); initReplay(); renderCost();
+</script>
+</body>
+</html>
