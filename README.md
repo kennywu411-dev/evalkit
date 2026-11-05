@@ -6,7 +6,7 @@ LLM 应用评测平台：评测集管理、打分器、实验运行、配对统�
 
 | 项目 | 任务 | 复算项 | 结果 |
 |---|---|---|---|
-| DataPilot | NL2SQL 问数（BIRD Mini-Dev 500 题，执行结果比对） | 基线 EX 与置信区间、按难度拆分、12 组配对检验、消融、3 次重复的均值 ± 标准差与稳定性、成本、延迟 | 52 / 53 一致，1 项是原登记表的舍入笔误（见下文） |
+| DataPilot | NL2SQL 问数（BIRD Mini-Dev 500 题，执行结果比对） | 基线 EX 与置信区间、按难度拆分、12 组配对检验、消融、3 次重复的均值 ± 标准差与稳定性、成本、延迟 | 53 / 53 一致 |
 | 合同风险审查 | 48 份构造合同的风险审查（规则打分） | 检出率、类型 / 依据准确率、三种口径精确率、干净合同误报、转人工、反问，全部 / 调试小样 / 留出集，5 次全量运行 | 79 / 79 一致 |
 
 完整对照表见 [docs/reproduction.md](docs/reproduction.md)。
@@ -65,23 +65,28 @@ import evalkit.dataset as ds
 from evalkit.runner import TaskResult, Variant, run
 from evalkit.scorers import ExactMatch, RuleScorer, contains_all
 
-data = ds.load("evals/qa.jsonl")          # 每行 {"id", "input", "expected", "tags", "split"}
-dev = data.split("dev")                   # 调试只看开发集，留出集留到最后
+data = ds.load("evals/qa.jsonl")  # 每行 {"id", "input", "expected", "tags", "split"}
+dev = data.split("dev")  # 调试只看开发集，留出集留到最后
+
 
 def make_task(model: str):
     async def task(item):
         resp = await my_app.answer(item.input, model=model)
         return TaskResult(output=resp.text, cost_usd=resp.cost, trace=resp.steps)
+
     return task
+
 
 result = run(
     dev,
-    [Variant("haiku", make_task("haiku"), {"model": "haiku", "prompt": "v3"}),
-     Variant("sonnet", make_task("sonnet"), {"model": "sonnet", "prompt": "v3"})],
+    [
+        Variant("haiku", make_task("haiku"), {"model": "haiku", "prompt": "v3"}),
+        Variant("sonnet", make_task("sonnet"), {"model": "sonnet", "prompt": "v3"}),
+    ],
     [ExactMatch(), RuleScorer("format", [("cites", contains_all(["依据"]))])],
     tag="prompt-v3",
     repeats=3,
-    max_cost=2.0,   # 累计花费上限（美元），续跑时已花的也算
+    max_cost=2.0,  # 累计花费上限（美元），续跑时已花的也算
 )
 ```
 
@@ -143,15 +148,25 @@ evalkit gate --baseline runs/<基线> --candidate runs/<候选> --max-drop 0.02 
 from evalkit.feedback import FeedbackStore, summarize
 
 store = FeedbackStore("feedback.jsonl", labels=["useful", "not_useful", "not_risk", "unclear"])
-store.add({"session_id": sid, "review_id": rid, "finding_index": 2, "label": "not_risk",
-           "finding": {"risk_type": "penalty", "level": "高"}})
+store.add(
+    {
+        "session_id": sid,
+        "review_id": rid,
+        "finding_index": 2,
+        "label": "not_risk",
+        "finding": {"risk_type": "penalty", "level": "高"},
+    }
+)
 
-summarize(store.load(),
-          key=["session_id", "review_id", "finding_index"],   # 同一目标以最后一次打标为准
-          labels=["useful", "not_useful", "not_risk", "unclear"],
-          positive="useful", negative="not_risk",              # 采纳率、误报率
-          where=lambda r: r["finding"]["level"] in ("高", "中"),
-          by="finding.risk_type")
+summarize(
+    store.load(),
+    key=["session_id", "review_id", "finding_index"],  # 同一目标以最后一次打标为准
+    labels=["useful", "not_useful", "not_risk", "unclear"],
+    positive="useful",
+    negative="not_risk",  # 采纳率、误报率
+    where=lambda r: r["finding"]["level"] in ("高", "中"),
+    by="finding.risk_type",
+)
 ```
 
 文件只追加、不改写，改标历史全部保留。只存调用方传进来的字段，建议只记 id、标签和输出摘要，不记用户原文。
@@ -175,7 +190,7 @@ summarize(store.load(),
 
 **合同风险审查**（`examples/contract_review/`）：一份合同是一道题，判分规则移植成 `ContractScorer`。每份合同产出逐项计数（检出了哪些风险、几条误报、引用对不对），再用 13 个 `Ratio` 指标跨合同累加。两种口径都复算了：运行时记下的计数（验证累加方式），以及用 `rescore` 从保存的审查结果按订正后的金标准重新判分（验证规则打分器逐份一致）。评测集只导出金标准和标签，不含合同正文。
 
-**一处已知差异**：DataPilot 登记表里 E1 → E2（Sonnet）的 McNemar p 写作 0.59。13 / 17 的精确值是 0.5847，应为 0.58，原项目自己的 `compare.py` 算出的也是这个值，属于手工抄录时的舍入笔误。复算脚本把它单独列为"已知差异"并写明原因，不靠放宽比较精度蒙混过去。
+**复算发现的一处笔误**：DataPilot 登记表里 E1 → E2（Sonnet）的 McNemar p 原来写作 0.59。13 / 17 的精确值是 0.5847，应为 0.58，原项目自己的 `compare.py` 算出的也是这个值，是手工抄录时的舍入笔误，已在原项目里改正。复算脚本保留了 `KNOWN` 机制：查明原因、暂时还不能改原文的差异单独列出并写明原因，而不是放宽比较精度。
 
 ## 设计取舍
 

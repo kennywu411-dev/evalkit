@@ -42,7 +42,7 @@ uv run python examples/contract_review/reproduce.py
 | agent Sonnet EX | 72.0% | 72.0% | ✓ |
 | agent Haiku EX | 65.8% | 65.8% | ✓ |
 | e0-baseline → e1-cached（sonnet） | 20 / 15 / 0.50 | 20 / 15 / 0.50 | ✓ |
-| e1-cached → e2-enhanced（sonnet） | 13 / 17 / 0.59 | 13 / 17 / 0.58 | 注 |
+| e1-cached → e2-enhanced（sonnet） | 13 / 17 / 0.58 | 13 / 17 / 0.58 | ✓ |
 | e0-baseline → e1-cached（haiku） | 22 / 28 / 0.48 | 22 / 28 / 0.48 | ✓ |
 | e1-cached → e2-enhanced（haiku） | 22 / 28 / 0.48 | 22 / 28 / 0.48 | ✓ |
 | e0-baseline → e2-enhanced（haiku） | 24 / 36 / 0.16 | 24 / 36 / 0.16 | ✓ |
@@ -67,8 +67,7 @@ uv run python examples/contract_review/reproduce.py
 | 分层抽样 20 题（seed=0）与试跑题目一致 | 一致 | 一致 | ✓ |
 | SQLResultMatch 重判 100 题与记录逐题一致 | 0 / 100 不一致 | 0 / 100 不一致 | ✓ |
 
-52 / 53 项一致，1 项已知差异，0 项不一致
-- e1-cached → e2-enhanced（sonnet）：McNemar 精确值 0.5847，numbers.md 手工舍入写成 0.59
+53 / 53 项一致，0 项已知差异，0 项不一致
 
 ## 合同风险审查（48 份构造合同，73 处植入风险）
 

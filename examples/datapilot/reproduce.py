@@ -31,9 +31,7 @@ from evalkit.report import repeat_stats, summarize  # noqa: E402
 BUNDLED = HERE / "runs"
 
 # numbers.md 与复算不一致、且已查明原因的项：单独列出，不计入失败
-KNOWN = {
-    "e1-cached → e2-enhanced（sonnet）": "McNemar 精确值 0.5847，numbers.md 手工舍入写成 0.59",
-}
+KNOWN: dict[str, str] = {}
 
 # evalkit 运行名 → [(DataPilot 运行目录前缀, repeat 偏移)]、流程名、是否保留 SQL 和中间步骤
 RUNS = {
@@ -136,7 +134,7 @@ def compute(root: Path) -> list[tuple[str, str, str]]:
     # 3. 配对检验（McNemar 精确检验）：A 独对 / B 独对 / p
     pairs = [
         ("e0-baseline", "e1-cached", "sonnet", "20 / 15 / 0.50"),
-        ("e1-cached", "e2-enhanced", "sonnet", "13 / 17 / 0.59"),
+        ("e1-cached", "e2-enhanced", "sonnet", "13 / 17 / 0.58"),
         ("e0-baseline", "e1-cached", "haiku", "22 / 28 / 0.48"),
         ("e1-cached", "e2-enhanced", "haiku", "22 / 28 / 0.48"),
         ("e0-baseline", "e2-enhanced", "haiku", "24 / 36 / 0.16"),
