@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest -q
+      # 用自带样例复算两个接入项目的关键数字，任何一项对不上都会失败
+      - run: uv run python examples/datapilot/reproduce.py
+      - run: uv run python examples/contract_review/reproduce.py
+      # 门禁演示：v1 → v2 是一次"改坏了"的发布，门禁必须拦下（退出码 1）
+      - name: gate demo
+        run: |
+          uv run evalkit run --dataset examples/quickstart/capitals.jsonl \
+            --task examples.quickstart.app:answer_v1 --scorer exact_match --variant app --tag v1 --runs-dir ci-runs
+          uv run evalkit run --dataset examples/quickstart/capitals.jsonl \
+            --task examples.quickstart.app:answer_v2 --scorer exact_match --variant app --tag v2 --runs-dir ci-runs
+          set +e
+          uv run evalkit gate --baseline ci-runs/v1-* --candidate ci-runs/v2-* --summary-file "$GITHUB_STEP_SUMMARY"
+          test $? -eq 1
