@@ -1,0 +1,24 @@
+{
+  "run_id": "agent",
+  "tag": "agent",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 500
+  },
+  "variants": {
+    "haiku": {
+      "model": "haiku",
+      "pipeline": "agent"
+    },
+    "sonnet": {
+      "model": "sonnet",
+      "pipeline": "agent"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "datapilot",
+  "pipeline": "agent"
+}

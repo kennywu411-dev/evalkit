@@ -1,0 +1,21 @@
+{
+  "run_id": "multi-haiku-2",
+  "tag": "multi-haiku-2",
+  "dataset": {
+    "name": "contract-review",
+    "version": "1.0.0",
+    "hash": "6624886f7d3c",
+    "n": 48
+  },
+  "variants": {
+    "haiku-multi": {
+      "model": "claude-haiku-5-5",
+      "task": "review_multi"
+    }
+  },
+  "scorers": [
+    "recorded"
+  ],
+  "primary_metric": "recorded",
+  "imported_from": "contract-review"
+}
