@@ -99,7 +99,7 @@ def test_resume_rejects_changed_dataset(tmp_path):
     r = run(ds(), [Variant("v", echo)], [ExactMatch()], runs_dir=tmp_path, progress=False)
     changed = ds()
     changed.items[0].expected = "x"
-    with pytest.raises(ValueError, match="评测集"):
+    with pytest.raises(ValueError, match="被改动"):
         run(
             changed,
             [Variant("v", echo)],
@@ -194,3 +194,16 @@ def test_dict_trace_is_flattened_and_custom_trace_id(tmp_path):
     t = store.load_trace(r.run_dir, "t1")
     assert t["result"] == {"kind": "review"} and t["steps"] == [{"llm_ms": 10}]
     assert t["item_id"] == 1 and t["scores"]["exact_match"]["passed"]
+
+
+def test_resume_can_add_items(tmp_path):
+    r = run(ds(3), [Variant("v", echo)], [ExactMatch()], runs_dir=tmp_path, progress=False)
+    r2 = run(
+        ds(5),
+        [Variant("v", echo)],
+        [ExactMatch()],
+        runs_dir=tmp_path,
+        resume=r.run_id,
+        progress=False,
+    )
+    assert len(r2.rows) == 5 and r2.spent_usd == pytest.approx(0.05)

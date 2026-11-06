@@ -172,10 +172,13 @@ async def arun(
     run_id = resume or store.new_run_id(tag)
     run_dir = Path(runs_dir) / run_id
     prev_cfg = store.load_config(run_dir)
+    hashes = dataset.item_hashes()
     if resume and prev_cfg:
-        old = prev_cfg.get("dataset", {}).get("hash")
-        if old and old != dataset.content_hash:
-            raise ValueError(f"续跑的评测集与原运行不一致（原 {old}，现 {dataset.content_hash}）")
+        # 续跑可以加题，但已跑过的题内容不能变（标准答案改了要用 rescore 或新开运行）
+        old = prev_cfg.get("item_hashes") or {}
+        changed = [i for i, h in old.items() if i in hashes and hashes[i] != h]
+        if changed:
+            raise ValueError(f"续跑的评测集里有 {len(changed)} 道已跑过的题被改动：{changed[:5]}")
     run_dir.mkdir(parents=True, exist_ok=True)
 
     existing = store.load_rows(run_dir)
@@ -195,6 +198,7 @@ async def arun(
             "concurrency": concurrency,
             "max_cost": max_cost,
             "item_ids": [it.id for it in dataset],
+            "item_hashes": hashes,
             "code_version": store.git_commit(),
             "python": platform.python_version(),
             **(extra_config or {}),

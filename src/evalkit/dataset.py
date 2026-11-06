@@ -41,6 +41,15 @@ class Dataset:
     def __iter__(self):
         return iter(self.items)
 
+    def item_hashes(self) -> dict[str, str]:
+        """每题的内容哈希（键为 str(id)），续跑时用来判断已跑过的题有没有被改。"""
+        return {
+            str(it.id): hashlib.sha256(
+                json.dumps(asdict(it), ensure_ascii=False, sort_keys=True).encode()
+            ).hexdigest()[:12]
+            for it in self.items
+        }
+
     @property
     def content_hash(self) -> str:
         h = hashlib.sha256()
