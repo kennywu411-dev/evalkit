@@ -7,7 +7,7 @@ uv run python examples/datapilot/reproduce.py
 uv run python examples/contract_review/reproduce.py
 ```
 
-## DataPilot（NL2SQL 问数，BIRD Mini-Dev 500 题）
+## DataPilot（NL2SQL 问数：BIRD Mini-Dev 500 题；电商经营分析 40 题 + 留出 19 题）
 
 加 `--repo <DataPilot 仓库>` 时额外核对两项：evalkit 的分层抽样与原项目 20 题试跑抽到的题目相同；`SQLResultMatch` 在 100 道题上重新执行预测 SQL 与标准 SQL，判分与原记录逐题一致。
 
@@ -64,10 +64,47 @@ uv run python examples/contract_review/reproduce.py
 | E4×3 haiku 都对 / 都错 / 不稳定 | 322 / 141 / 37 | 322 / 141 / 37 | ✓ |
 | Opus E0 → E4 EX | 86.6% → 86.4% | 86.6% → 86.4% | ✓ |
 | Opus E0 独对 / E4 独对 / p | 12 / 11 / 1.00 | 12 / 11 / 1.00 | ✓ |
+| 语义层 shop-noev haiku 各次通过（均值） | 25 / 26 / 28（65.8%） | 25 / 26 / 28（65.8%） | ✓ |
+| 语义层 shop-noev sonnet 各次通过（均值） | 25 / 26 / 26（64.2%） | 25 / 26 / 26（64.2%） | ✓ |
+| 语义层 sem-ctx haiku 各次通过（均值） | 37 / 36 / 38（92.5%） | 37 / 36 / 38（92.5%） | ✓ |
+| 语义层 sem-ctx sonnet 各次通过（均值） | 38 / 38 / 38（95.0%） | 38 / 38 / 38（95.0%） | ✓ |
+| 语义层 sem-cmp haiku 各次通过（均值） | 35 / 35 / 35（87.5%） | 35 / 35 / 35（87.5%） | ✓ |
+| 语义层 sem-cmp sonnet 各次通过（均值） | 36 / 36 / 36（90.0%） | 36 / 36 / 36（90.0%） | ✓ |
+| 语义层 hold-e4 haiku 各次通过（均值） | 13 / 14 / 10（64.9%） | 13 / 14 / 10（64.9%） | ✓ |
+| 语义层 hold-e4 sonnet 各次通过（均值） | 12 / 11 / 11（59.6%） | 12 / 11 / 11（59.6%） | ✓ |
+| 语义层 hold-ctx haiku 各次通过（均值） | 19 / 19 / 19（100.0%） | 19 / 19 / 19（100.0%） | ✓ |
+| 语义层 hold-ctx sonnet 各次通过（均值） | 19 / 19 / 19（100.0%） | 19 / 19 / 19（100.0%） | ✓ |
+| 语义层 hold-cmp haiku 各次通过（均值） | 19 / 19 / 19（100.0%） | 19 / 19 / 19（100.0%） | ✓ |
+| 语义层 hold-cmp sonnet 各次通过（均值） | 19 / 19 / 19（100.0%） | 19 / 19 / 19（100.0%） | ✓ |
+| 语义层 shop-noev → sem-ctx（haiku 第 1 次） | 0/12 p=0.0005 | 0/12 p=0.0005 | ✓ |
+| 语义层 shop-noev → sem-ctx（haiku 第 2 次） | 0/10 p=0.002 | 0/10 p=0.002 | ✓ |
+| 语义层 shop-noev → sem-ctx（haiku 第 3 次） | 0/10 p=0.002 | 0/10 p=0.002 | ✓ |
+| 语义层 shop-noev → sem-ctx（sonnet 第 1 次） | 0/13 p=0.0002 | 0/13 p=0.0002 | ✓ |
+| 语义层 shop-noev → sem-ctx（sonnet 第 2 次） | 0/12 p=0.0005 | 0/12 p=0.0005 | ✓ |
+| 语义层 shop-noev → sem-ctx（sonnet 第 3 次） | 0/12 p=0.0005 | 0/12 p=0.0005 | ✓ |
+| 语义层 shop-noev → sem-cmp（haiku 第 1 次） | 1/11 p=0.006 | 1/11 p=0.006 | ✓ |
+| 语义层 shop-noev → sem-cmp（haiku 第 2 次） | 1/10 p=0.012 | 1/10 p=0.012 | ✓ |
+| 语义层 shop-noev → sem-cmp（haiku 第 3 次） | 2/9 p=0.065 | 2/9 p=0.065 | ✓ |
+| 语义层 shop-noev → sem-cmp（sonnet 第 1 次） | 1/12 p=0.003 | 1/12 p=0.003 | ✓ |
+| 语义层 shop-noev → sem-cmp（sonnet 第 2 次） | 1/11 p=0.006 | 1/11 p=0.006 | ✓ |
+| 语义层 shop-noev → sem-cmp（sonnet 第 3 次） | 1/11 p=0.006 | 1/11 p=0.006 | ✓ |
+| 语义层 sem-ctx → sem-cmp（haiku 第 1 次） | 2/0 p=0.5 | 2/0 p=0.5 | ✓ |
+| 语义层 sem-ctx → sem-cmp（haiku 第 2 次） | 2/1 p=1.0 | 2/1 p=1.0 | ✓ |
+| 语义层 sem-ctx → sem-cmp（haiku 第 3 次） | 3/0 p=0.25 | 3/0 p=0.25 | ✓ |
+| 语义层 sem-ctx → sem-cmp（sonnet 第 1 次） | 2/0 p=0.5 | 2/0 p=0.5 | ✓ |
+| 语义层 sem-ctx → sem-cmp（sonnet 第 2 次） | 2/0 p=0.5 | 2/0 p=0.5 | ✓ |
+| 语义层 sem-ctx → sem-cmp（sonnet 第 3 次） | 2/0 p=0.5 | 2/0 p=0.5 | ✓ |
+| 语义层 hold-e4 → hold-ctx（haiku 第 1 次） | 0/6 p=0.031 | 0/6 p=0.031 | ✓ |
+| 语义层 hold-e4 → hold-ctx（haiku 第 2 次） | 0/5 p=0.062 | 0/5 p=0.062 | ✓ |
+| 语义层 hold-e4 → hold-ctx（haiku 第 3 次） | 0/9 p=0.004 | 0/9 p=0.004 | ✓ |
+| 语义层 hold-e4 → hold-ctx（sonnet 第 1 次） | 0/7 p=0.016 | 0/7 p=0.016 | ✓ |
+| 语义层 hold-e4 → hold-ctx（sonnet 第 2 次） | 0/8 p=0.008 | 0/8 p=0.008 | ✓ |
+| 语义层 hold-e4 → hold-ctx（sonnet 第 3 次） | 0/8 p=0.008 | 0/8 p=0.008 | ✓ |
+| 语义层 标准答案自检 | 100.0% | 100.0% | ✓ |
 | 分层抽样 20 题（seed=0）与试跑题目一致 | 一致 | 一致 | ✓ |
 | SQLResultMatch 重判 100 题与记录逐题一致 | 0 / 100 不一致 | 0 / 100 不一致 | ✓ |
 
-53 / 53 项一致，0 项已知差异，0 项不一致
+90 / 90 项一致，0 项已知差异，0 项不一致
 
 ## 合同风险审查（48 份构造合同，73 处植入风险）
 

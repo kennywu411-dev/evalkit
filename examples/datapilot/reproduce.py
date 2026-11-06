@@ -44,6 +44,14 @@ RUNS = {
     "abl-retrieval": ([("abl-", 0)], "abl_retrieval", False),
     "e4-x3": ([("e4-", 0), ("e4rep-", 1)], "e4_correct", False),
     "e4-opus": ([("e4opus-", 0)], "e4_correct", False),
+    # v1.5 指标语义层：去掉口径说明的电商 40 题、字典定稿后另写的留出 19 题，各 3 次
+    "shop-noev": ([("shop-noev-", 0)], "e4_correct", False),
+    "sem-ctx": ([("sem-ctx-", 0)], "sem_context", True),
+    "sem-cmp": ([("sem-cmp-", 0)], "sem_compile", False),
+    "hold-e4": ([("hold-e4-", 0)], "e4_correct", False),
+    "hold-ctx": ([("hold-ctx-", 0)], "sem_context", False),
+    "hold-cmp": ([("hold-cmp-", 0)], "sem_compile", False),
+    "gold-sem": ([("gold-sem-", 0)], "sem_context", False),
 }
 
 
@@ -192,6 +200,44 @@ def compute(root: Path) -> list[tuple[str, str, str]]:
             f"{len(c['a_only'])} / {len(c['b_only'])} / {c['p_value']:.2f}",
         )
     )
+    # 7. v1.5 指标语义层：各次通过题数与均值、同一次序号配对的 McNemar 检验
+    sem_table = {
+        ("shop-noev", "haiku"): "25 / 26 / 28（65.8%）",
+        ("shop-noev", "sonnet"): "25 / 26 / 26（64.2%）",
+        ("sem-ctx", "haiku"): "37 / 36 / 38（92.5%）",
+        ("sem-ctx", "sonnet"): "38 / 38 / 38（95.0%）",
+        ("sem-cmp", "haiku"): "35 / 35 / 35（87.5%）",
+        ("sem-cmp", "sonnet"): "36 / 36 / 36（90.0%）",
+        ("hold-e4", "haiku"): "13 / 14 / 10（64.9%）",
+        ("hold-e4", "sonnet"): "12 / 11 / 11（59.6%）",
+        ("hold-ctx", "haiku"): "19 / 19 / 19（100.0%）",
+        ("hold-ctx", "sonnet"): "19 / 19 / 19（100.0%）",
+        ("hold-cmp", "haiku"): "19 / 19 / 19（100.0%）",
+        ("hold-cmp", "sonnet"): "19 / 19 / 19（100.0%）",
+    }
+    for (name, m), exp in sem_table.items():
+        rs = [r for r in rows[name] if r["variant"] == m]
+        per = [sum(r["passed"] for r in rs if r["repeat"] == k) for k in range(3)]
+        got = " / ".join(map(str, per)) + f"（{pct(sum(per) / len(rs))}）"
+        out.append((f"语义层 {name} {m} 各次通过（均值）", exp, got))
+    sem_pairs = {
+        ("shop-noev", "sem-ctx", "haiku"): ["0/12 p=0.0005", "0/10 p=0.002", "0/10 p=0.002"],
+        ("shop-noev", "sem-ctx", "sonnet"): ["0/13 p=0.0002", "0/12 p=0.0005", "0/12 p=0.0005"],
+        ("shop-noev", "sem-cmp", "haiku"): ["1/11 p=0.006", "1/10 p=0.012", "2/9 p=0.065"],
+        ("shop-noev", "sem-cmp", "sonnet"): ["1/12 p=0.003", "1/11 p=0.006", "1/11 p=0.006"],
+        ("sem-ctx", "sem-cmp", "haiku"): ["2/0 p=0.5", "2/1 p=1.0", "3/0 p=0.25"],
+        ("sem-ctx", "sem-cmp", "sonnet"): ["2/0 p=0.5", "2/0 p=0.5", "2/0 p=0.5"],
+        ("hold-e4", "hold-ctx", "haiku"): ["0/6 p=0.031", "0/5 p=0.062", "0/9 p=0.004"],
+        ("hold-e4", "hold-ctx", "sonnet"): ["0/7 p=0.016", "0/8 p=0.008", "0/8 p=0.008"],
+    }
+    for (a, b, m), exps in sem_pairs.items():
+        for k, exp in enumerate(exps):
+            c = compare(rows[a], rows[b], m, m, repeat=k)
+            digits = len(exp.rsplit(".", 1)[1])
+            got = f"{len(c['a_only'])}/{len(c['b_only'])} p={c['p_value']:.{digits}f}"
+            out.append((f"语义层 {a} → {b}（{m} 第 {k + 1} 次）", exp, got))
+    gs = summarize(rows["gold-sem"])
+    out.append(("语义层 标准答案自检", "100.0%", " / ".join(pct(x["rate"]) for x in gs)))
     return out
 
 

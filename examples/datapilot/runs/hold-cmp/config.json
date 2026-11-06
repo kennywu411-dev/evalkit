@@ -1,0 +1,24 @@
+{
+  "run_id": "hold-cmp",
+  "tag": "hold-cmp",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 19
+  },
+  "variants": {
+    "haiku": {
+      "model": "haiku",
+      "pipeline": "sem_compile"
+    },
+    "sonnet": {
+      "model": "sonnet",
+      "pipeline": "sem_compile"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "datapilot",
+  "pipeline": "sem_compile"
+}
