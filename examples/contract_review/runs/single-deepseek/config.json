@@ -1,0 +1,21 @@
+{
+  "run_id": "single-deepseek",
+  "tag": "single-deepseek",
+  "dataset": {
+    "name": "contract-review",
+    "version": "1.0.0",
+    "hash": "6624886f7d3c",
+    "n": 48
+  },
+  "variants": {
+    "deepseek-single": {
+      "model": "deepseek-flash",
+      "task": "review"
+    }
+  },
+  "scorers": [
+    "recorded"
+  ],
+  "primary_metric": "recorded",
+  "imported_from": "contract-review"
+}

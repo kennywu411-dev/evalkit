@@ -1,0 +1,24 @@
+{
+  "run_id": "e1-cached",
+  "tag": "e1-cached",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 500
+  },
+  "variants": {
+    "haiku": {
+      "model": "haiku",
+      "pipeline": "e1_cached"
+    },
+    "sonnet": {
+      "model": "sonnet",
+      "pipeline": "e1_cached"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "datapilot",
+  "pipeline": "e1_cached"
+}

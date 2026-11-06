@@ -1,0 +1,32 @@
+[project]
+name = "evalkit"
+version = "0.1.0"
+description = "LLM 应用评测平台：评测集管理、打分器、实验运行、配对统计、回归门禁、线上反馈与静态看板"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+evalkit = "evalkit.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/evalkit"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+# 行宽交给 ruff format；格式化器拆不开的长字符串（多为中文说明）不再单独报错
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
