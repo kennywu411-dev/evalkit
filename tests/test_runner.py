@@ -207,3 +207,24 @@ def test_resume_can_add_items(tmp_path):
         progress=False,
     )
     assert len(r2.rows) == 5 and r2.spent_usd == pytest.approx(0.05)
+
+
+def test_row_fields_and_no_trace_files(tmp_path):
+    def fields(item, row):
+        return {"question_id": item.id, "correct": row["passed"], "item_id": "不能改"}
+
+    r = run(
+        ds(3),
+        [Variant("v", echo)],
+        [ExactMatch()],
+        runs_dir=tmp_path,
+        progress=False,
+        row_fields=fields,
+        save_traces=False,
+    )
+    assert all(x["question_id"] == x["item_id"] and x["correct"] for x in r.rows)
+    assert not (r.run_dir / "traces").exists()
+    fixed = ds(3)
+    fixed.items[0].expected = "x"
+    rows = rescore(r.run_dir, fixed, [ExactMatch()], row_fields=fields)
+    assert [x["correct"] for x in sorted(rows, key=lambda x: x["item_id"])] == [False, True, True]

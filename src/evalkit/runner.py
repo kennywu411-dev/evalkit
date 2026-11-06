@@ -10,7 +10,9 @@
 - 第一个打分器是主指标，它的 passed 写进结果行的 passed，配对检验和门禁默认看它；
 - 任务抛异常记为 status=error，续跑时会重试；抛 AbortRun（如密钥失效、额度用完）立即停止整次运行；
 - max_cost 是本次运行目录的累计花费上限（续跑时已花的钱也算在内）：达到后不再发起新任务，
-  已在途的任务会跑完，所以可能略超。
+  已在途的任务会跑完，所以可能略超；
+- row_fields(item, row) 返回的字段并入结果行，用于沿用项目原有的字段名，让旧代码照常读取；
+- save_traces=False 时不单独写 trace 文件（过程已经放在结果行里、或运行目录要入 git 时）。
 """
 
 from __future__ import annotations
@@ -131,6 +133,16 @@ def build_row(
     }
 
 
+KEY_FIELDS = ("item_id", "variant", "repeat")
+
+
+def _with_fields(row: dict, item: Item, row_fields) -> dict:
+    """项目自定义字段并入结果行（如沿用原有的字段名），但不能改 key。"""
+    if row_fields is None:
+        return row
+    return {**row, **row_fields(item, row), **{k: row[k] for k in KEY_FIELDS}}
+
+
 def trace_record(
     item: Item, variant: str, repeat: int, res: TaskResult | None, row: dict, err: str | None
 ) -> dict:
@@ -164,6 +176,8 @@ async def arun(
     resume: str | None = None,
     extra_config: dict | None = None,
     progress: bool = True,
+    row_fields: Callable[[Item, dict], dict] | None = None,
+    save_traces: bool = True,
 ) -> RunResult:
     if not variants:
         raise ValueError("至少需要一个变体")
@@ -234,13 +248,16 @@ async def arun(
                 err = f"{type(e).__name__}: {e}"
             latency = time.perf_counter() - start
             scores = {} if err else await asyncio.to_thread(_score_all, scorers, item, res.output)
-            row = build_row(item, v.name, repeat, res, scores, latency, err)
+            row = _with_fields(
+                build_row(item, v.name, repeat, res, scores, latency, err), item, row_fields
+            )
         async with lock:
             spent += row["cost_usd"]
             store.append_row(run_dir, row)
-            store.save_trace(
-                run_dir, row["trace_id"], trace_record(item, v.name, repeat, res, row, err)
-            )
+            if save_traces:
+                store.save_trace(
+                    run_dir, row["trace_id"], trace_record(item, v.name, repeat, res, row, err)
+                )
             new_rows.append(row)
             finished += 1
             if progress:
@@ -270,7 +287,11 @@ def run(dataset: Dataset, variants: Sequence[Variant], scorers: Sequence, **kw) 
 
 
 def rescore(
-    run_dir: str | Path, dataset: Dataset, scorers: Sequence, out_dir: str | Path | None = None
+    run_dir: str | Path,
+    dataset: Dataset,
+    scorers: Sequence,
+    out_dir: str | Path | None = None,
+    row_fields: Callable[[Item, dict], dict] | None = None,
 ) -> list[dict]:
     """用已保存的输出重新打分，不再调用模型。标准答案订正、打分规则修改后用。
 
@@ -291,7 +312,9 @@ def rescore(
             item, r["variant"], r.get("repeat", 0), res, scores, r.get("latency_s", 0.0)
         )
         new["trace_id"] = r.get("trace_id", new["trace_id"])
-        rows.append(new)
+        # 原行里平台不认识的字段（项目自定义字段）原样保留，再按 row_fields 重算
+        new = {**{k: v for k, v in r.items() if k not in new}, **new}
+        rows.append(_with_fields(new, item, row_fields))
     store.write_rows(out, rows)
     if (run_dir / store.TRACES).is_dir():
         shutil.copytree(run_dir / store.TRACES, out / store.TRACES, dirs_exist_ok=True)
