@@ -2,7 +2,7 @@
 
 LLM 应用评测平台：评测集管理、打分器、实验运行、配对统计、回归门禁、线上反馈和静态看板，打包成一个零运行时依赖的 Python 包。
 
-已经接入两个真实项目，并用它们已有的运行记录复算出各自数字登记表里的关键数字：
+两个真实项目在用它：合同风险审查项目的评测已经直接改成调用 evalkit；DataPilot（NL2SQL 问数）目前通过适配器导入运行记录。两个项目已有的运行记录都能复算出各自数字登记表里的关键数字：
 
 | 项目 | 任务 | 复算项 | 结果 |
 |---|---|---|---|
@@ -47,14 +47,42 @@ uv run python examples/contract_review/reproduce.py
 | `evalkit.dataset` | JSONL 评测集；语义化版本号 + 内容哈希；开发集 / 留出集划分；按标签分层抽样（最大余数法，固定种子） |
 | `evalkit.scorers` | 精确匹配（含归一化、多候选答案）；SQL 执行结果比对（只读连接、预测与标准共用超时预算，口径同 BIRD 官方 EX）；规则打分（多条具名检查） |
 | `evalkit.judge` | LLM 当裁判：逐题打分；两两比较（交换位置各判一次，不一致记平局）；与人工标注的一致率和 Cohen's κ 校准 |
+| `evalkit.clients` | 裁判模型客户端（OpenAI 兼容接口、Anthropic Messages API），只用 urllib；限流重试、按 token 计价、累计花费上限 |
 | `evalkit.labels` | 人工标注导入（CSV / JSONL，可按标注者筛选），可直接当打分器用 |
 | `evalkit.runner` | 并发执行、逐题落盘、断点续跑、花费硬上限、配置快照、每题 trace；`rescore` 用已保存的输出重新打分 |
 | `evalkit.stats` | Wilson 区间、bootstrap 区间、McNemar 精确检验、配对 bootstrap 差值、均值 ± 标准差、稳定性 |
 | `evalkit.report` | 按变体汇总、按子集拆分、成本和延迟分位数、多次运行统计、跨题累加的比例指标（`Ratio`） |
 | `evalkit.compare` | 两次运行的配对比较，可按子集拆分 |
 | `evalkit.gate` | 回归门禁，一条命令判断有没有显著变差，退出码可直接用于 CI |
-| `evalkit.feedback` | 线上反馈：只追加写入，同一目标以最后一次打标为准，按维度汇总 |
+| `evalkit.feedback` | 线上反馈：只追加写入，同一目标以最后一次打标为准，按维度汇总；自带最小的 HTTP 接收服务 |
 | `evalkit.dashboard` | 静态看板：实验列表、指标对比、失败题逐条回放、成本与延迟 |
+
+## 命令行
+
+| 命令 | 用途 |
+|---|---|
+| `evalkit run` | 跑一次实验（`--task 模块:函数`，`--scorer` 可多个，`--repeats`、`--max-cost`、`--resume`） |
+| `evalkit report` | 汇总一次运行，`--slice` 按标签拆分 |
+| `evalkit compare` | 两次运行的配对比较 |
+| `evalkit repeats` | 多次运行的均值 ± 标准差和稳定性，可以合并多个运行目录 |
+| `evalkit gate` | 回归门禁，不通过时退出码 1 |
+| `evalkit rescore` | 用保存的输出重新打分，不调用模型 |
+| `evalkit dataset info / validate / diff / split / sample` | 评测集管理 |
+| `evalkit calibrate` | LLM 裁判与人工标注的一致率和 κ，`--min-agreement` 不达标时退出码 1 |
+| `evalkit feedback summary / add / serve` | 线上反馈：汇总、追加、HTTP 接收服务 |
+| `evalkit dashboard` | 生成静态看板 |
+
+## 评测集管理
+
+```bash
+evalkit dataset info evals/qa.jsonl                         # 题数、版本、内容哈希、划分、各标签分布
+evalkit dataset validate evals/qa.jsonl                     # 缺标准答案、未知划分等问题，有问题退出码 1
+evalkit dataset split evals/qa.jsonl --holdout 0.3 --by difficulty --version 1.1.0 -o evals/qa-v1.1.jsonl
+evalkit dataset sample evals/qa.jsonl -n 20 --by difficulty -o evals/smoke.jsonl   # 冒烟集
+evalkit dataset diff evals/qa.jsonl evals/qa-v1.1.jsonl     # 新增 / 删除 / 改动了哪些题、改了哪些字段
+```
+
+评测集是一个 JSONL 文件加一个同名的 `.meta.json`（名称和语义化版本号）。每次运行的配置快照里都记录评测集的内容哈希，以及每题的哈希。
 
 ## 接入自己的应用
 
@@ -100,18 +128,31 @@ runs/<run_id>/
   traces/         每题一个文件：输入、输出、中间步骤、各打分器结果
 ```
 
-约定：第一个打分器是主指标，它的 `passed` 写进结果行，配对检验和门禁默认看它。任务抛异常记为 `status=error`，续跑（`resume=<run_id>`）时只重跑这些题；抛 `AbortRun`（密钥失效、额度用完）则立即停止整次运行。
+约定：
+
+- 第一个打分器是主指标，它的 `passed` 写进结果行，配对检验和门禁默认看它。
+- 任务可以是同步函数，也可以是异步函数。同步函数放进线程里执行，同样受 `concurrency` 控制。
+- 任务抛异常记为 `status=error`，续跑（`resume=<run_id>`）时只重跑这些题；抛 `AbortRun`（密钥失效、额度用完）则立即停止整次运行。
+- 续跑可以往评测集里加题。如果已经跑过的题内容变了，就拒绝续跑：标准答案订正后应该用 `rescore`，或者新开一次运行。
+- 应用已经有自己的 trace 格式时，`TaskResult(trace=<dict>, trace_id=<自己的 id>)` 会把它原样写进 `traces/<trace_id>.json`，并附上题目、输出和打分。读取旧 trace 的代码不用改。
 
 ## LLM 当裁判
 
-裁判模型通过一个函数注入（接收提示词，返回原话或 `(原话, 花费)`），包本身不依赖任何模型 SDK。
+裁判模型通过一个函数注入：接收提示词，返回原话或 `(原话, 花费)`。`evalkit.clients` 提供两个现成的实现，只用标准库：
 
 ```python
+from evalkit.clients import anthropic_client, openai_compatible, with_budget
 from evalkit.judge import PairwiseJudge, PointwiseJudge, calibrate
 from evalkit.labels import load_labels
 
-judge = PointwiseJudge(client=call_my_model, rubric="答案是否准确、是否引用了依据", pass_score=4)
-pair = PairwiseJudge(client=call_my_model, rubric="哪个修改建议更可执行")
+llm = with_budget(
+    anthropic_client("<模型 id>", price_per_mtok=(1.0, 5.0)),  # (输入, 输出) 每百万 token 美元
+    max_cost=2.0,  # 累计花费到上限后抛 AbortRun，评测运行会停下并提示续跑
+)
+# 也可以用 openai_compatible("<模型 id>", base_url="https://.../v1", api_key_env="...")
+
+judge = PointwiseJudge(client=llm, rubric="答案是否准确、是否引用了依据", pass_score=4)
+pair = PairwiseJudge(client=llm, rubric="哪个修改建议更可执行")
 out = pair.compare_many([(q, old, new) for q, old, new in samples])
 print(out["b_win_rate"], out["position_consistency"])
 
@@ -119,7 +160,11 @@ report = calibrate(judge_labels, load_labels("labels/human.csv"))
 print(report["agreement"], report["kappa"], report["disagreements"])
 ```
 
-两条使用原则：两两比较一律交换位置各判一次，两次结论不一致记平局，并报告位置一致率；裁判和人工的一致率没达标之前，裁判分数只作参考，不进门禁。
+两条使用原则：两两比较一律交换位置各判一次，两次结论不一致记平局，并报告位置一致率；裁判和人工的一致率没达标之前，裁判分数只作参考，不进门禁。校准也可以在命令行里做，适合放进 CI：
+
+```bash
+evalkit calibrate --judge labels/judge.csv --human labels/human.csv --min-agreement 0.8
+```
 
 ## 统计口径
 
@@ -171,6 +216,14 @@ summarize(
 
 文件只追加、不改写，改标历史全部保留。只存调用方传进来的字段，建议只记 id、标签和输出摘要，不记用户原文。
 
+没有现成后端时，可以直接启动接收服务，让前端 POST 打标：
+
+```bash
+evalkit feedback serve feedback.jsonl --key session_id,review_id,finding_index \
+  --labels useful,not_useful,not_risk,unclear --positive useful --negative not_risk --port 8787
+# POST /feedback 写入一条打标（标签不在集合里、缺字段返回 422），GET /feedback/summary 读汇总
+```
+
 ## 看板
 
 `evalkit dashboard <运行目录或其父目录>... -o site/index.html` 生成一个 HTML 文件：
@@ -182,7 +235,18 @@ summarize(
 
 为了控制体积，只有失败题保留输出和过程。
 
-## 两个接入示例
+## 在已有项目里接入：合同风险审查
+
+这个项目原来有一套自己的评测代码，现在 `cra eval-review` 直接调用 evalkit：
+
+- **运行**：合同 → `Dataset`（正文只记哈希），审查流程 → `Variant`，原有判分规则包成打分器。逐份落盘、续跑、预算闸门、并发都由 `evalkit.runner` 负责。
+- **指标**：检出率、精确率等 20 多个指标改用 `Ratio` 声明，分位数用 `evalkit.stats.percentile`。
+- **兼容**：运行目录是 evalkit 格式，同时派生一份原来的 `review_results.jsonl` 和 `summary.json`。trace 文件沿用原格式。依据校验、多轮追问、分析脚本和 Web 运行记录页都不用改。接入之前的旧运行，在续跑、门禁、看板时现场转换。
+- **新命令**：`cra eval-gate`（回归门禁）、`cra eval-dashboard`（看板），都可以先按当前金标准从 trace 重新判分，让历史运行和新运行用同一口径比较。
+- **验证**：接入前后各做一次快照，内容包括全部 21 次审查运行的汇总，以及三个分析脚本对 11 次关键运行的输出。逐项比较一致。接入前有几项会报错（早期运行缺少后来才加的字段），现在不再报错：分析脚本可以直接复现"运行时口径"的数字。
+- **线上反馈**：试用反馈的存储和"按最后一次为准"的汇总改用 `evalkit.feedback`，输出口径不变。
+
+## 两个复算示例
 
 适配器只做一件事：把原项目的运行记录转成 evalkit 的运行目录，然后所有数字都由 evalkit 的通用模块计算。
 
@@ -197,7 +261,7 @@ summarize(
 - **零运行时依赖**：核心只用标准库。评测代码会被拷进各个项目、跑在 CI 里，依赖越少越不容易和宿主项目冲突。统计方法都很小，自己实现并用已知数值测试。
 - **运行记录是唯一事实来源**：所有数字由 `results.jsonl` 现算，报告、门禁、看板都不手抄数字。结果逐题追加，进程中途退出不会丢数据，续跑时同一 key 以最后一行为准。
 - **主指标是二值的**：配对检验和门禁需要每题一个对错。连续分数（裁判分、规则通过比例）放在 `scores` 里一并保存；需要跨题累加的指标用 `Ratio` 单独声明，不强行塞进"每题一个分数"。
-- **配置快照带内容哈希**：只记版本号挡不住"同一版本号、不同题目"。续跑时如果评测集哈希变了，直接拒绝。
+- **配置快照带内容哈希**：只记版本号挡不住"同一版本号、不同题目"。快照按题记录哈希，续跑时可以加题，但已经跑过的题被改动就拒绝。
 - **重新打分不调用模型**：金标准订正、打分规则修改后，用保存的输出重算（`rescore`），结果写到新目录，原始结果不动。合同审查示例里的"订正后口径"就是这样得到的。
 - **裁判是可插拔的函数**：不绑定任何模型厂商。测试用假函数，接入时包一层真实调用。
 - **看板是单个静态文件**：不需要服务器和前端构建，可以作为 CI 产物上传，也可以直接发给别人。代价是数据量大时文件会变大，所以通过的题不带输出。
@@ -206,7 +270,7 @@ summarize(
 ## 目录结构
 
 ```
-src/evalkit/          核心包
+src/evalkit/          核心包（dataset、scorers、judge、clients、labels、runner、stats、report、compare、gate、feedback、dashboard、cli）
 tests/                单元测试和集成测试（含两个示例的复算）
 examples/quickstart/  入门示例
 examples/datapilot/   DataPilot 适配器、复算脚本、导出的运行记录样例
