@@ -12,6 +12,7 @@
 - max_cost 是本次运行目录的累计花费上限（续跑时已花的钱也算在内）：达到后不再发起新任务，
   已在途的任务会跑完，所以可能略超；
 - row_fields(item, row) 返回的字段并入结果行，用于沿用项目原有的字段名，让旧代码照常读取；
+- retry_status：续跑时视为"没跑完"、要重跑的状态，默认只有 error；
 - save_traces=False 时不单独写 trace 文件（过程已经放在结果行里、或运行目录要入 git 时）。
 """
 
@@ -22,7 +23,7 @@ import inspect
 import platform
 import shutil
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -178,6 +179,7 @@ async def arun(
     progress: bool = True,
     row_fields: Callable[[Item, dict], dict] | None = None,
     save_traces: bool = True,
+    retry_status: Collection[str] = ("error",),
 ) -> RunResult:
     if not variants:
         raise ValueError("至少需要一个变体")
@@ -196,7 +198,7 @@ async def arun(
     run_dir.mkdir(parents=True, exist_ok=True)
 
     existing = store.load_rows(run_dir)
-    done = {store.row_key(r) for r in existing if r["status"] != "error"}
+    done = {store.row_key(r) for r in existing if r["status"] not in retry_status}
     spent = sum(r.get("cost_usd", 0.0) for r in existing)
     store.write_json(
         run_dir / store.CONFIG,

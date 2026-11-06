@@ -228,3 +228,36 @@ def test_row_fields_and_no_trace_files(tmp_path):
     fixed.items[0].expected = "x"
     rows = rescore(r.run_dir, fixed, [ExactMatch()], row_fields=fields)
     assert [x["correct"] for x in sorted(rows, key=lambda x: x["item_id"])] == [False, True, True]
+
+
+def test_retry_status_on_resume(tmp_path):
+    state = {"fail": True}
+
+    def flaky(item):
+        if state["fail"] and item.id == 1:
+            return TaskResult(output=None, meta={"status": "llm_error"})
+        return item.expected
+
+    def fields(item, row):
+        return {"status": "llm_error"} if row["output"] is None else {}
+
+    r = run(
+        ds(3),
+        [Variant("v", flaky)],
+        [ExactMatch()],
+        runs_dir=tmp_path,
+        progress=False,
+        row_fields=fields,
+    )
+    assert sorted(x["status"] for x in r.rows) == ["llm_error", "ok", "ok"]
+    state["fail"] = False
+    r2 = run(
+        ds(3),
+        [Variant("v", flaky)],
+        [ExactMatch()],
+        runs_dir=tmp_path,
+        resume=r.run_id,
+        progress=False,
+        retry_status=("error", "llm_error"),
+    )
+    assert all(x["passed"] for x in r2.rows)
