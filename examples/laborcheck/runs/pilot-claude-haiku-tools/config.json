@@ -1,0 +1,51 @@
+{
+  "run_id": "pilot-claude-haiku-tools",
+  "tag": "pilot-claude-haiku-tools",
+  "source_run": "pilot-claude-haiku-tools",
+  "dataset": {
+    "name": "laborcheck",
+    "version": "1.0.0",
+    "n": 26
+  },
+  "variants": {
+    "claude-haiku-tools": {
+      "model": "claude-haiku-5-5",
+      "display": "Claude Haiku 5.5",
+      "mode": "tools",
+      "effort": ""
+    }
+  },
+  "scorers": [
+    "recorded"
+  ],
+  "primary_metric": "recorded",
+  "repeats": 1,
+  "item_ids": [
+    "lc-0009",
+    "lc-0011",
+    "lc-0066",
+    "lc-0078",
+    "lc-0086",
+    "lc-0122",
+    "lc-0123",
+    "lc-0138",
+    "lc-0139",
+    "lc-0142",
+    "lc-0178",
+    "lc-0185",
+    "lc-0196",
+    "lc-0208",
+    "lc-0220",
+    "lc-0227",
+    "lc-0235",
+    "lc-0241",
+    "lc-0248",
+    "lc-0279",
+    "lc-0280",
+    "lc-0308",
+    "lc-0317",
+    "lc-0333",
+    "lc-0337",
+    "lc-0339"
+  ]
+}

@@ -2,12 +2,13 @@
 
 LLM 应用评测平台：评测集管理、打分器、实验运行、配对统计、回归门禁、线上反馈和静态看板，打包成一个零运行时依赖的 Python 包。
 
-两个真实项目的评测已经直接改成调用 evalkit：DataPilot（NL2SQL 问数）和合同风险审查。两个项目已有的运行记录都能复算出各自数字登记表里的关键数字：
+三个真实项目的评测已经直接改成调用 evalkit：DataPilot（NL2SQL 问数）、合同风险审查和 laborcheck（中国劳动法问答）。三个项目已有的运行记录都能复算出各自结果登记表里的数字：
 
 | 项目 | 任务 | 复算项 | 结果 |
 |---|---|---|---|
 | DataPilot | NL2SQL 问数（BIRD Mini-Dev 500 题，执行结果比对） | 基线 EX 与置信区间、按难度拆分、12 组配对检验、消融、3 次重复的均值 ± 标准差与稳定性、成本、延迟；指标语义层 6 组 × 3 次的通过题数和 24 组逐次配对检验；分层抽样与 SQL 执行比对器的逐题核对 | 90 / 90 一致 |
 | 合同风险审查 | 48 份构造合同的风险审查（规则打分） | 检出率、类型 / 依据准确率、三种口径精确率、干净合同误报、转人工、反问，全部 / 调试小样 / 留出集，5 次全量运行 | 79 / 79 一致 |
+| laborcheck | 339 道劳动法题（合法性判断、金额计算、条款改写；仅模型 vs 加规则引擎工具） | 18 次运行的准确率与 Wilson 区间，按题型、主题、地方数据依赖、开发集 / 留出集拆分，5 组 McNemar 配对检验，花费、延迟与工具调用，两轮全量之间的稳定性；规则打分器重新判分 3598 题，逐题核对 | 609 / 610 一致，1 处已知差异 |
 
 完整对照表见 [docs/reproduction.md](docs/reproduction.md)。
 
@@ -28,16 +29,17 @@ uv run evalkit run --dataset examples/quickstart/capitals.jsonl \
 
 uv run evalkit compare runs/v1-* runs/v2-* --slice region   # 配对比较，按地区拆分
 uv run evalkit gate --baseline runs/v1-* --candidate runs/v2-*   # v2 变差，退出码 1
-uv run evalkit dashboard runs examples/datapilot/runs examples/contract_review/runs -o site/index.html
+uv run evalkit dashboard runs examples/datapilot/runs examples/contract_review/runs examples/laborcheck/runs -o site/index.html
 ```
 
 `site/index.html` 是一个自包含的文件，数据内嵌，直接用浏览器打开即可。
 
-复算两个接入项目的数字：
+复算三个接入项目的数字：
 
 ```bash
 uv run python examples/datapilot/reproduce.py
 uv run python examples/contract_review/reproduce.py
+uv run python examples/laborcheck/reproduce.py
 ```
 
 ## 能力一览
@@ -172,7 +174,7 @@ evalkit calibrate --judge labels/judge.csv --human labels/human.csv --min-agreem
 - **比较两个配置**：只比较两边都有的题，用 McNemar 精确检验，只看"A 对 B 错"和"B 对 A 错"的题。这比分别算两个区间、看是否重叠更灵敏。
 - **多次运行**：同一配置跑多次，报告均值 ± 标准差，以及"每次都对 / 每次都错 / 时对时错"的题数。DataPilot 的数据显示单题会翻转（Sonnet 4.4%、Haiku 7.4% 的题时对时错），但总分波动在 1.5 个百分点以内。
 - **跨题累加的指标**：检出率、精确率这类指标按题累加分子分母（微平均），而不是对每题的比例取平均。用 `Ratio` 声明，`aggregate` 计算，可以给出按题重抽样的 bootstrap 区间。
-- **分位数**：P50 / P95 取排序后第 ⌊q·n⌋ 个值，不插值，和两个接入项目的口径一致。
+- **分位数**：P50 / P95 取排序后第 ⌊q·n⌋ 个值，不插值，和 DataPilot、合同审查两个项目的口径一致。
 
 ## 回归门禁
 
@@ -185,7 +187,7 @@ evalkit gate --baseline runs/<基线> --candidate runs/<候选> --max-drop 0.02 
 
 显著性检验和降幅阈值两条都要。题少时（比如 20 题的冒烟集）掉 10 个点也可能不显著，只靠检验会放过回归；题多时 1 个点的波动也可能"显著"，只靠阈值又会误报。阈值回答"业务上能容忍多少"，检验回答"这是不是噪声"。
 
-`.github/workflows/ci.yml` 里有完整示例：跑测试、复算两个接入项目的数字，并演示门禁拦下一次变差的发布。
+`.github/workflows/ci.yml` 里有完整示例：跑测试、复算三个接入项目的数字，并演示门禁拦下一次变差的发布。
 
 ## 线上反馈
 
@@ -237,7 +239,7 @@ evalkit feedback serve feedback.jsonl --key session_id,review_id,finding_index \
 
 ## 在已有项目里接入
 
-两个项目原来各有一套自己的评测代码，现在都改成调用 evalkit。接入前后各做一次数字快照，逐项比较，全部一致之后才合并。
+三个项目原来各有一套自己的评测代码，现在都改成调用 evalkit。接入前后各做一次数字快照，逐项比较，全部一致之后才合并。
 
 ### DataPilot
 
@@ -258,7 +260,15 @@ evalkit feedback serve feedback.jsonl --key session_id,review_id,finding_index \
 - **验证**：接入前后各做一次快照，内容包括全部 21 次审查运行的汇总，以及三个分析脚本对 11 次关键运行的输出。逐项比较一致。接入前有几项会报错（早期运行缺少后来才加的字段），现在不再报错：分析脚本可以直接复现"运行时口径"的数字。
 - **线上反馈**：试用反馈的存储和"按最后一次为准"的汇总改用 `evalkit.feedback`，输出口径不变。
 
-## 两个复算示例
+### laborcheck
+
+- **运行**：`laborcheck run` 由 `evalkit.runner` 负责并发、逐题落盘、续跑和花费上限；模型调用（含工具调用循环）是任务，原有判分规则包成打分器，模型调用出错的题记为 error，续跑时重跑。花费上限沿用原来的口径：按运行目录累计，被重跑掉的出错记录也算已花。
+- **结果格式**：结果行同时带 evalkit 字段和原有字段（`row_fields`），工具调用记录照旧放在结果行里（`save_traces=False`）。汇总、典型错误、花费估算都不用改。
+- **统计**：Wilson 区间改用 `evalkit.stats`；汇总新增开发集 / 留出集拆分。
+- **新命令**：`laborcheck compare`（McNemar 配对比较，可按题型、主题拆分）、`laborcheck gate`（回归门禁）、`laborcheck dashboard`（看板）。接入前的运行在这三个命令里现场转换，原文件不改。结果登记里两种模式的配对比较表由 `compare` 复算，写进了测试。
+- **验证**：接入前后各做一次快照，共 76 项：18 次运行的汇总、逐题记录和典型错误，各组结果表，`report` 和 `estimate` 的输出，抽样，以及一次离线自检运行。除 Wilson 区间的浮点末位外逐项一致（两边的公式代数上相同，运算顺序不同，最大差 2.2e-16，显示到百分位的数字全部相同）。
+
+## 三个复算示例
 
 适配器只做一件事：把原项目的运行记录转成 evalkit 的运行目录，然后所有数字都由 evalkit 的通用模块计算。
 
@@ -266,7 +276,9 @@ evalkit feedback serve feedback.jsonl --key session_id,review_id,finding_index \
 
 **合同风险审查**（`examples/contract_review/`）：一份合同是一道题，判分规则移植成 `ContractScorer`。每份合同产出逐项计数（检出了哪些风险、几条误报、引用对不对），再用 13 个 `Ratio` 指标跨合同累加。两种口径都复算了：运行时记下的计数（验证累加方式），以及用 `rescore` 从保存的审查结果按订正后的金标准重新判分（验证规则打分器逐份一致）。评测集只导出金标准和标签，不含合同正文。
 
-**复算发现的一处笔误**：DataPilot 登记表里 E1 → E2（Sonnet）的 McNemar p 原来写作 0.59。13 / 17 的精确值是 0.5847，应为 0.58，原项目自己的 `compare.py` 算出的也是这个值，是手工抄录时的舍入笔误，已在原项目里改正。复算脚本保留了 `KNOWN` 机制：查明原因、暂时还不能改原文的差异单独列出并写明原因，而不是放宽比较精度。
+**laborcheck**（`examples/laborcheck/`）：一道题一行，`variant` 是"模型-模式"（仅模型 / 加工具）。导入时只保留回答末尾的 JSON 对象，判分规则用 `RuleScorer` 重写（结论、金额容差、改写约束、改写文本），依据命中单独一个打分器。18 次运行用 `rescore` 重新判分后与运行时判分逐题一致，再由此算出结果登记表的每个格子：总体、拆分、配对检验、花费延迟、两轮之间的稳定性（两版评测集用 `dataset.diff` 找出改过题面的 14 题，在其余 325 题上比较）。文档里的表格由脚本直接摘录，不手抄。
+
+**复算发现的笔误**：DataPilot 登记表里 E1 → E2（Sonnet）的 McNemar p 原来写作 0.59。13 / 17 的精确值是 0.5847，应为 0.58，原项目自己的 `compare.py` 算出的也是这个值，是手工抄录时的舍入笔误，已在原项目里改正。laborcheck 结果登记里 `full-claude-tools` 的每题平均花费写作 0.0177，合计 5.9829 美元 ÷ 339 题 = 0.01765，应为 0.0176（0.0177 是除以 338 的结果），列在复算脚本的已知差异里。复算脚本保留了 `KNOWN` 机制：查明原因、暂时还不能改原文的差异单独列出并写明原因，而不是放宽比较精度。
 
 ## 设计取舍
 
@@ -283,10 +295,11 @@ evalkit feedback serve feedback.jsonl --key session_id,review_id,finding_index \
 
 ```
 src/evalkit/          核心包（dataset、scorers、judge、clients、labels、runner、stats、report、compare、gate、feedback、dashboard、cli）
-tests/                单元测试和集成测试（含两个示例的复算）
+tests/                单元测试和集成测试（含三个示例的复算）
 examples/quickstart/  入门示例
 examples/datapilot/   DataPilot 适配器、复算脚本、导出的运行记录样例
 examples/contract_review/  合同审查适配器、规则打分器、复算脚本、评测集（仅金标准）和运行记录样例
+examples/laborcheck/  laborcheck 适配器、规则打分器、复算脚本、两版评测集（仅标准答案）、结果表摘录和运行记录样例
 docs/reproduction.md  复算对照表
 ```
 
