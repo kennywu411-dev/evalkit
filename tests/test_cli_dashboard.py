@@ -127,10 +127,15 @@ def test_slice_keys_skip_high_cardinality():
 
 
 @pytest.mark.parametrize(
-    "script", ["examples/datapilot/reproduce.py", "examples/contract_review/reproduce.py"]
+    "script",
+    [
+        "examples/datapilot/reproduce.py",
+        "examples/contract_review/reproduce.py",
+        "examples/laborcheck/reproduce.py",
+    ],
 )
 def test_examples_reproduce_bundled_numbers(script):
-    """两个适配示例用自带样例复算，必须和原项目 numbers.md 全部一致（已知差异除外）。"""
+    """适配示例用自带样例复算，必须和原项目的结果登记全部一致（已知差异除外）。"""
     r = subprocess.run(
         [sys.executable, str(ROOT / script)], capture_output=True, text=True, cwd=ROOT
     )

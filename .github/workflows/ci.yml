@@ -14,9 +14,10 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest -q
-      # 用自带样例复算两个接入项目的关键数字，任何一项对不上都会失败
+      # 用自带样例复算三个接入项目的结果登记，任何一项对不上都会失败
       - run: uv run python examples/datapilot/reproduce.py
       - run: uv run python examples/contract_review/reproduce.py
+      - run: uv run python examples/laborcheck/reproduce.py
       # 门禁演示：v1 → v2 是一次"改坏了"的发布，门禁必须拦下（退出码 1）
       - name: gate demo
         run: |
