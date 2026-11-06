@@ -154,3 +154,31 @@ def test_load_rows_last_wins(tmp_path):
     store.append_row(d, {"item_id": 1, "variant": "v", "repeat": 0, "passed": True})
     assert store.load_rows(d) == [{"item_id": 1, "variant": "v", "repeat": 0, "passed": True}]
     assert store.list_runs(tmp_path) == [d]
+
+
+def test_sync_tasks_run_concurrently(tmp_path):
+    import threading
+    import time
+
+    active = {"now": 0, "max": 0}
+    lock = threading.Lock()
+
+    def slow(item):
+        with lock:
+            active["now"] += 1
+            active["max"] = max(active["max"], active["now"])
+        time.sleep(0.05)
+        with lock:
+            active["now"] -= 1
+        return item.expected
+
+    r = run(
+        ds(8),
+        [Variant("v", slow)],
+        [ExactMatch()],
+        runs_dir=tmp_path,
+        concurrency=4,
+        progress=False,
+    )
+    assert all(x["passed"] for x in r.rows)
+    assert active["max"] > 1

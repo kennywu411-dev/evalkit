@@ -1,18 +1,21 @@
 """命令行入口：evalkit <子命令>。
 
-evalkit run       --dataset ds.jsonl --task mypkg.app:answer --scorer exact_match [--repeats 3 --max-cost 2]
-evalkit report    runs/<run_id> [--slice difficulty]
-evalkit compare   runs/<A> runs/<B> [--variant-a x --variant-b y] [--slice difficulty]
-evalkit repeats   runs/<run_id> --variant x
-evalkit gate      --baseline runs/<A> --candidate runs/<B> [--max-drop 0.02 --alpha 0.05]
-evalkit rescore   runs/<run_id> --dataset ds.jsonl --scorer mypkg.scoring:scorer
-evalkit feedback  summary feedback.jsonl --key session_id,target_id --labels useful,not_risk
-evalkit dashboard runs/ [更多运行目录...] -o site/index.html
+run        跑一次实验：evalkit run --dataset ds.jsonl --task mypkg.app:answer --scorer exact_match
+report     汇总一次运行：evalkit report runs/<id> --slice difficulty
+compare    配对比较：evalkit compare runs/<A> runs/<B> --slice difficulty
+repeats    多次运行的均值、方差、稳定性：evalkit repeats runs/<id> [runs/<id2> ...]
+gate       回归门禁：evalkit gate --baseline runs/<A> --candidate runs/<B>
+rescore    用保存的输出重新打分：evalkit rescore runs/<id> --dataset ds.jsonl --scorer exact_match
+dataset    评测集管理：info / validate / diff / split / sample
+calibrate  裁判与人工一致率：evalkit calibrate --judge j.csv --human h.csv
+feedback   线上反馈：summary / add / serve
+dashboard  静态看板：evalkit dashboard runs/ -o site/index.html
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib
 import json
 import sys
@@ -108,7 +111,13 @@ def cmd_compare(a) -> int:
 def cmd_repeats(a) -> int:
     from evalkit.report import repeat_stats
 
-    rows = [r for r in _rows(a.run) if a.variant is None or r["variant"] == a.variant]
+    rows, offset = [], 0
+    for run in a.runs:  # 多个运行目录：把各自的 repeat 依次接起来
+        rs = [r for r in _rows(run) if a.variant is None or r["variant"] == a.variant]
+        if not rs:
+            raise SystemExit(f"{run} 里没有变体 {a.variant!r}")
+        rows += [{**r, "repeat": r.get("repeat", 0) + offset} for r in rs]
+        offset = max(r["repeat"] for r in rows) + 1
     s = repeat_stats(rows)
     if a.json:
         print(json.dumps(s, ensure_ascii=False, indent=2))
@@ -165,20 +174,79 @@ def cmd_rescore(a) -> int:
     return 0
 
 
-def cmd_feedback(a) -> int:
-    from evalkit.feedback import FeedbackStore, summarize
+def _summary_kw(a) -> dict:
+    return {
+        "key": a.key.split(","),
+        "labels": a.labels.split(","),
+        "positive": a.positive,
+        "negative": a.negative,
+        "by": a.by,
+    }
 
-    rows = FeedbackStore(a.file).load()
-    s = summarize(
-        rows,
-        key=a.key.split(","),
-        labels=a.labels.split(","),
-        positive=a.positive,
-        negative=a.negative,
-        by=a.by,
-    )
-    print(json.dumps(s, ensure_ascii=False, indent=2))
+
+def cmd_feedback(a) -> int:
+    from evalkit.feedback import FeedbackStore, make_server, summarize
+
+    store = FeedbackStore(a.file, labels=a.labels.split(","), required=a.key.split(","))
+    if a.action == "summary":
+        print(json.dumps(summarize(store.load(), **_summary_kw(a)), ensure_ascii=False, indent=2))
+    elif a.action == "add":
+        try:
+            store.add(json.loads(a.entry))
+        except ValueError as e:
+            print(f"[feedback] {e}", file=sys.stderr)
+            return 2
+    else:
+        srv = make_server(store, a.host, a.port, **_summary_kw(a))
+        print(f"反馈服务：http://{a.host}:{srv.server_port}  POST /feedback  GET /feedback/summary")
+        with contextlib.suppress(KeyboardInterrupt):
+            srv.serve_forever()
     return 0
+
+
+def cmd_dataset(a) -> int:
+    ds = ds_mod.load(a.file)
+    if a.action == "info":
+        print(json.dumps(ds_mod.describe(ds), ensure_ascii=False, indent=2))
+    elif a.action == "validate":
+        problems = ds_mod.validate(ds)
+        for x in problems:
+            print(f"✗ {x}")
+        print(
+            f"{ds.name} v{ds.version}（{ds.content_hash}）：{len(ds)} 题，问题 {len(problems)} 个"
+        )
+        return 1 if problems else 0
+    elif a.action == "diff":
+        print(json.dumps(ds_mod.diff(ds, ds_mod.load(a.other)), ensure_ascii=False, indent=2))
+    elif a.action == "split":
+        out = ds_mod.assign_split(ds, a.holdout, by=a.by, seed=a.seed)
+        out.version = a.version or ds.version
+        out.save(Path(a.output))
+        print(json.dumps(ds_mod.describe(out), ensure_ascii=False, indent=2))
+    elif a.action == "sample":
+        items = ds_mod.stratified_sample(ds.items, a.n, a.by or (lambda it: None), a.seed)
+        out = ds_mod.Dataset(f"{ds.name}-sample{a.n}", items, ds.version)
+        out.save(Path(a.output))
+        print(f"抽样 {len(items)} 题 → {a.output}")
+    return 0
+
+
+def cmd_calibrate(a) -> int:
+    from evalkit.judge import calibrate
+    from evalkit.labels import load_labels
+
+    judge = load_labels(a.judge, a.id_field, a.label_field)
+    human = load_labels(a.human, a.id_field, a.label_field)
+    c = calibrate(judge, human)
+    if a.json:
+        print(json.dumps(c, ensure_ascii=False, indent=2))
+    else:
+        print(f"共同样本 {c['n']}：一致率 {c['agreement']:.1%}，Cohen's κ = {c['kappa']:.3f}")
+        print("混淆矩阵（行 = 裁判，列 = 人工）：" + json.dumps(c["confusion"], ensure_ascii=False))
+        if c["disagreements"]:
+            print("不一致：" + ", ".join(map(str, c["disagreements"][:50])))
+    ok = a.min_agreement is None or c["agreement"] >= a.min_agreement
+    return 0 if ok else 1
 
 
 def cmd_dashboard(a) -> int:
@@ -233,7 +301,7 @@ def main(argv: list[str] | None = None) -> int:
     r.set_defaults(fn=cmd_compare)
 
     r = sub.add_parser("repeats", help="多次运行的均值、方差和稳定性")
-    r.add_argument("run")
+    r.add_argument("runs", nargs="+", help="一个含多次重复的运行，或多个运行目录")
     r.add_argument("--variant")
     r.add_argument("--json", action="store_true")
     r.set_defaults(fn=cmd_repeats)
@@ -258,16 +326,60 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--out")
     r.set_defaults(fn=cmd_rescore)
 
-    r = sub.add_parser("feedback", help="汇总线上反馈")
+    fb_common = argparse.ArgumentParser(add_help=False)
+    fb_common.add_argument("file", help="反馈 JSONL 文件")
+    fb_common.add_argument("--key", required=True, help="确定一个打标目标的字段，逗号分隔")
+    fb_common.add_argument("--labels", required=True, help="允许的标签，逗号分隔")
+    fb_common.add_argument("--positive", help="正向标签（如 useful → 采纳率）")
+    fb_common.add_argument("--negative", help="负向标签（如 not_risk → 误报率）")
+    fb_common.add_argument("--by", help="按字段拆分，点号路径如 finding.risk_type")
+    r = sub.add_parser("feedback", help="线上反馈：汇总、追加、接收服务")
     fsub = r.add_subparsers(dest="action", required=True)
-    f = fsub.add_parser("summary")
-    f.add_argument("file")
-    f.add_argument("--key", required=True, help="确定一个打标目标的字段，逗号分隔")
-    f.add_argument("--labels", required=True)
-    f.add_argument("--positive")
-    f.add_argument("--negative")
-    f.add_argument("--by")
+    fsub.add_parser("summary", parents=[fb_common], help="按最后一次打标汇总").set_defaults(
+        fn=cmd_feedback
+    )
+    f = fsub.add_parser("add", parents=[fb_common], help="追加一条打标")
+    f.add_argument("--entry", required=True, help="打标内容，JSON 对象")
     f.set_defaults(fn=cmd_feedback)
+    f = fsub.add_parser("serve", parents=[fb_common], help="启动 HTTP 接收服务")
+    f.add_argument("--host", default="127.0.0.1")
+    f.add_argument("--port", type=int, default=8787)
+    f.set_defaults(fn=cmd_feedback)
+
+    r = sub.add_parser("dataset", help="评测集管理：信息、校验、版本差异、划分、抽样")
+    dsub = r.add_subparsers(dest="action", required=True)
+    for name, help_ in (("info", "题数、划分、标签分布"), ("validate", "体检，有问题退出码 1")):
+        d = dsub.add_parser(name, help=help_)
+        d.add_argument("file")
+        d.set_defaults(fn=cmd_dataset)
+    d = dsub.add_parser("diff", help="两个版本的差异")
+    d.add_argument("file")
+    d.add_argument("other")
+    d.set_defaults(fn=cmd_dataset)
+    d = dsub.add_parser("split", help="划分开发集 / 留出集")
+    d.add_argument("file")
+    d.add_argument("--holdout", type=float, default=0.3)
+    d.add_argument("--by", help="分层标签")
+    d.add_argument("--seed", type=int, default=0)
+    d.add_argument("--version", help="新版本号")
+    d.add_argument("-o", "--output", required=True)
+    d.set_defaults(fn=cmd_dataset)
+    d = dsub.add_parser("sample", help="分层抽样出一个小评测集（如冒烟集）")
+    d.add_argument("file")
+    d.add_argument("-n", type=int, required=True)
+    d.add_argument("--by", help="分层标签")
+    d.add_argument("--seed", type=int, default=0)
+    d.add_argument("-o", "--output", required=True)
+    d.set_defaults(fn=cmd_dataset)
+
+    r = sub.add_parser("calibrate", help="LLM 裁判与人工标注的一致率校准")
+    r.add_argument("--judge", required=True, help="裁判标签 CSV / JSONL")
+    r.add_argument("--human", required=True, help="人工标签 CSV / JSONL")
+    r.add_argument("--id-field", default="id")
+    r.add_argument("--label-field", default="label")
+    r.add_argument("--min-agreement", type=float, help="一致率低于该值时退出码 1")
+    r.add_argument("--json", action="store_true")
+    r.set_defaults(fn=cmd_calibrate)
 
     r = sub.add_parser("dashboard", help="生成静态看板")
     r.add_argument("runs", nargs="+", help="运行目录，或包含多个运行目录的文件夹")

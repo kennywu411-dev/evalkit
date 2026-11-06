@@ -136,3 +136,82 @@ def test_examples_reproduce_bundled_numbers(script):
     )
     assert r.returncode == 0, r.stdout[-2000:] + r.stderr[-2000:]
     assert "0 项不一致" in r.stdout
+
+
+def test_cli_dataset_commands(tmp_path, capsys):
+    src = QS / "capitals.jsonl"
+    assert main(["dataset", "info", str(src)]) == 0
+    assert json.loads(capsys.readouterr().out)["n"] == 24
+    split = tmp_path / "split.jsonl"
+    assert (
+        main(
+            [
+                "dataset",
+                "split",
+                str(src),
+                "--holdout",
+                "0.25",
+                "--by",
+                "region",
+                "--version",
+                "1.1.0",
+                "-o",
+                str(split),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert main(["dataset", "validate", str(split)]) == 0
+    assert "v1.1.0" in capsys.readouterr().out
+    assert main(["dataset", "diff", str(src), str(split)]) == 0
+    d = json.loads(capsys.readouterr().out)
+    assert len(d["changed"]) == 24 and d["new"]["version"] == "1.1.0"  # 每题都多了 split 字段
+    smoke = tmp_path / "smoke.jsonl"
+    assert main(["dataset", "sample", str(src), "-n", "8", "--by", "region", "-o", str(smoke)]) == 0
+    assert sum(1 for _ in smoke.open()) == 8
+
+
+def test_cli_calibrate(tmp_path, capsys):
+    j = tmp_path / "j.csv"
+    h = tmp_path / "h.csv"
+    j.write_text("id,label\n1,pass\n2,fail\n3,pass\n4,pass\n", encoding="utf-8")
+    h.write_text("id,label\n1,pass\n2,fail\n3,fail\n4,pass\n", encoding="utf-8")
+    assert main(["calibrate", "--judge", str(j), "--human", str(h)]) == 0
+    assert "一致率 75.0%" in capsys.readouterr().out
+    assert main(["calibrate", "--judge", str(j), "--human", str(h), "--min-agreement", "0.8"]) == 1
+
+
+def test_cli_feedback_add_and_repeats_across_runs(two_runs, tmp_path, capsys):
+    f = tmp_path / "fb.jsonl"
+    common = ["--key", "session_id,target", "--labels", "useful,not_risk"]
+    assert (
+        main(
+            [
+                "feedback",
+                "add",
+                str(f),
+                *common,
+                "--entry",
+                '{"session_id": "s", "target": 1, "label": "useful"}',
+            ]
+        )
+        == 0
+    )
+    assert (
+        main(
+            [
+                "feedback",
+                "add",
+                str(f),
+                *common,
+                "--entry",
+                '{"session_id": "s", "label": "useful"}',
+            ]
+        )
+        == 2
+    )
+    a, b = two_runs
+    assert main(["repeats", str(a), str(b), "--json"]) == 0
+    s = json.loads(capsys.readouterr().out)
+    assert s["runs"] == 2 and s["rates"] == [1.0, 0.75] and s["stability"]["flaky"] == 6

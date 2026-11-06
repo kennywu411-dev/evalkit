@@ -148,3 +148,36 @@ def test_feedback_validation_and_empty(tmp_path):
 def test_latest_orders_by_ts_when_present():
     rs = [{"k": 1, "label": "b", "ts": 2}, {"k": 1, "label": "a", "ts": 1}]
     assert latest(rs, ["k"])[0]["label"] == "b"
+
+
+def test_feedback_http_server(tmp_path):
+    import json as _json
+    import threading
+    import urllib.error
+    import urllib.request
+
+    from evalkit.feedback import make_server
+
+    store = FeedbackStore(tmp_path / "fb.jsonl", labels=LABELS)
+    srv = make_server(store, port=0, key=KEY, labels=LABELS, positive="useful")
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_port}"
+
+    def post(body):
+        req = urllib.request.Request(
+            base + "/feedback",
+            data=_json.dumps(body).encode(),
+            headers={"content-type": "application/json"},
+        )
+        return urllib.request.urlopen(req)
+
+    try:
+        assert post(fb("not_risk")).status == 200
+        assert post(fb("useful")).status == 200
+        with pytest.raises(urllib.error.HTTPError) as e:
+            post(fb("great"))
+        assert e.value.code == 422
+        s = _json.loads(urllib.request.urlopen(base + "/feedback/summary").read())
+        assert s["rated"] == 1 and s["positive_rate"] == 1.0
+    finally:
+        srv.shutdown()

@@ -197,3 +197,51 @@ def slice_counts(items: Iterable[Item], key: str) -> dict:
         k = it.tags.get(key)
         out[k] = out.get(k, 0) + 1
     return dict(sorted(out.items(), key=lambda kv: str(kv[0])))
+
+
+def diff(old: Dataset, new: Dataset) -> dict:
+    """两个版本的评测集差异：新增、删除、改动的题目 id，以及改动了哪些字段。"""
+    a = {it.id: asdict(it) for it in old}
+    b = {it.id: asdict(it) for it in new}
+    changed = {}
+    for i in sorted(set(a) & set(b), key=str):
+        fields = [k for k in ("input", "expected", "tags", "split") if a[i][k] != b[i][k]]
+        if fields:
+            changed[i] = fields
+    return {
+        "old": old.fingerprint,
+        "new": new.fingerprint,
+        "added": sorted(set(b) - set(a), key=str),
+        "removed": sorted(set(a) - set(b), key=str),
+        "changed": changed,
+    }
+
+
+def validate(ds: Dataset) -> list[str]:
+    """评测集体检：返回问题清单（空表示通过）。"""
+    problems = []
+    for it in ds:
+        if it.expected is None:
+            problems.append(f"{it.id}：没有标准答案")
+        if it.split not in (None, *SPLITS):
+            problems.append(f"{it.id}：未知划分 {it.split!r}")
+        if not isinstance(it.tags, dict):
+            problems.append(f"{it.id}：tags 应为对象")
+    splits = {it.split for it in ds}
+    if None in splits and len(splits) > 1:
+        problems.append("部分题目没有划分 dev / holdout")
+    return problems
+
+
+def describe(ds: Dataset) -> dict:
+    """题数、划分、各标签的取值分布（取值过多的标签只报种类数）。"""
+    tag_keys = dict.fromkeys(k for it in ds for k in it.tags)
+    tags = {}
+    for k in tag_keys:
+        counts = slice_counts(ds.items, k)
+        tags[k] = counts if len(counts) <= 20 else {"distinct": len(counts)}
+    return {
+        **ds.fingerprint,
+        "splits": slice_counts([Item(it.id, tags={"s": it.split}) for it in ds], "s"),
+        "tags": tags,
+    }

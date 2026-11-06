@@ -78,3 +78,21 @@ def test_from_records():
     it = ds.get(7)
     assert it.expected == "SELECT 1" and it.tags == {"difficulty": "simple"}
     assert it.input == {"question": "x", "difficulty": "simple"}
+
+
+def test_diff_validate_describe():
+    from evalkit.dataset import describe, diff, validate
+
+    a = make()
+    b = make()
+    b.items[0].expected = "new"
+    b.items = b.items[1:5] + [b.items[0], Item(99, "q", "a")]
+    d = diff(a, b)
+    assert d["added"] == [99] and 5 in d["removed"] and d["changed"] == {0: ["expected"]}
+    bad = Dataset("x", [Item(1, "q", None, split="test"), Item(2, "q", "a", split="dev")])
+    probs = validate(bad)
+    assert any("没有标准答案" in p for p in probs) and any("未知划分" in p for p in probs)
+    assert validate(assign_split(make(), 0.3, by="difficulty")) == []
+    info = describe(assign_split(make(), 0.3, by="difficulty"))
+    assert info["splits"] == {"dev": 21, "holdout": 9}
+    assert info["tags"]["difficulty"]["moderate"] == 15

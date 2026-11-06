@@ -66,8 +66,16 @@ class RunResult:
         return self.skipped == 0 and not any(r["status"] == "error" for r in self.rows)
 
 
+def _is_async(task: Task) -> bool:
+    # 带 async __call__ 的可调用对象也算异步任务
+    return inspect.iscoroutinefunction(task) or inspect.iscoroutinefunction(
+        type(task).__call__ if not inspect.isfunction(task) else None
+    )
+
+
 async def _call_task(task: Task, item: Item) -> TaskResult:
-    out = task(item)
+    """异步任务直接 await；同步任务放进线程执行，否则会阻塞事件循环、并发形同虚设。"""
+    out = await task(item) if _is_async(task) else await asyncio.to_thread(task, item)
     if inspect.isawaitable(out):
         out = await out
     return out if isinstance(out, TaskResult) else TaskResult(output=out)
