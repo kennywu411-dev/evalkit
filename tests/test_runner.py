@@ -182,3 +182,15 @@ def test_sync_tasks_run_concurrently(tmp_path):
     )
     assert all(x["passed"] for x in r.rows)
     assert active["max"] > 1
+
+
+def test_dict_trace_is_flattened_and_custom_trace_id(tmp_path):
+    def app(item):
+        own = {"trace_id": f"t{item.id}", "steps": [{"llm_ms": 10}], "result": {"kind": "review"}}
+        return TaskResult(output=item.expected, trace=own, trace_id=f"t{item.id}")
+
+    r = run(ds(2), [Variant("v", app)], [ExactMatch()], runs_dir=tmp_path, progress=False)
+    assert {x["trace_id"] for x in r.rows} == {"t0", "t1"}
+    t = store.load_trace(r.run_dir, "t1")
+    assert t["result"] == {"kind": "review"} and t["steps"] == [{"llm_ms": 10}]
+    assert t["item_id"] == 1 and t["scores"]["exact_match"]["passed"]

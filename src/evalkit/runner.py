@@ -39,8 +39,11 @@ class TaskResult:
     output: Any
     cost_usd: float = 0.0
     usage: dict | None = None
-    trace: Any = None  # 中间步骤（工具调用、检索结果、重试……），原样写进 trace 文件
+    # 中间步骤（工具调用、检索结果、重试……）。列表等记在 trace 文件的 steps 字段；
+    # dict 则原样展开到 trace 文件顶层，应用自己的 trace 格式和读取它的代码都不用改
+    trace: Any = None
     meta: dict = field(default_factory=dict)  # 额外字段，写进结果行
+    trace_id: str | None = None  # 应用自己的 trace id；不给则由 (题目, 变体, 重复) 生成
 
 
 Task = Callable[[Item], Any]
@@ -121,10 +124,31 @@ def build_row(
         "cost_usd": (res.cost_usd if res else 0.0) + sum(s.cost_usd for s in scores.values()),
         "usage": res.usage if res else None,
         "latency_s": latency_s,
-        "trace_id": store.trace_id(item.id, variant, repeat),
+        "trace_id": (res.trace_id if res and res.trace_id else None)
+        or store.trace_id(item.id, variant, repeat),
         **({"error": error} if error else {}),
         **(res.meta if res else {}),
     }
+
+
+def trace_record(
+    item: Item, variant: str, repeat: int, res: TaskResult | None, row: dict, err: str | None
+) -> dict:
+    rec = {
+        "trace_id": row["trace_id"],
+        "item_id": item.id,
+        "variant": variant,
+        "repeat": repeat,
+        "input": item.input,
+        "expected": item.expected,
+        "output": row["output"],
+        "scores": row["scores"],
+        "error": err,
+    }
+    trace = res.trace if res else None
+    if isinstance(trace, dict):
+        return {**rec, **trace}  # 应用的字段优先
+    return {**rec, "steps": trace}
 
 
 async def arun(
@@ -211,20 +235,7 @@ async def arun(
             spent += row["cost_usd"]
             store.append_row(run_dir, row)
             store.save_trace(
-                run_dir,
-                row["trace_id"],
-                {
-                    "trace_id": row["trace_id"],
-                    "item_id": item.id,
-                    "variant": v.name,
-                    "repeat": repeat,
-                    "input": item.input,
-                    "expected": item.expected,
-                    "output": row["output"],
-                    "steps": res.trace if res else None,
-                    "scores": row["scores"],
-                    "error": err,
-                },
+                run_dir, row["trace_id"], trace_record(item, v.name, repeat, res, row, err)
             )
             new_rows.append(row)
             finished += 1
