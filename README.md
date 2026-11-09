@@ -4,6 +4,10 @@
 
 LLM 应用评测平台：评测集管理、打分器、实验运行、配对统计、回归门禁、线上反馈和静态看板，打包成一个零运行时依赖的 Python 包。
 
+**[在线看板](https://kennywu411-dev.github.io/evalkit/)**：下面三个项目的真实运行记录，可以对比实验、逐条看失败题。
+
+![评测看板](docs/images/dashboard.jpg)
+
 三个真实项目的评测已经直接改成调用 evalkit：[DataPilot](https://github.com/kennywu411-dev/datapilot)（NL2SQL 问数）、[合同风险审查](https://github.com/kennywu411-dev/contract-review-agent)和 [laborcheck](https://github.com/kennywu411-dev/laborcheck)（中国劳动法问答）。三个项目已有的运行记录都能复算出各自结果登记表里的数字：
 
 | 项目 | 任务 | 复算项 | 结果 |
