@@ -1,4 +1,4 @@
-# evalkit
+# evalkit：LLM 应用评测平台
 
 [![CI](https://github.com/kennywu411-dev/evalkit/actions/workflows/ci.yml/badge.svg)](https://github.com/kennywu411-dev/evalkit/actions/workflows/ci.yml) ![Python 3.12](https://img.shields.io/badge/python-3.12-blue) ![Dependencies: none](https://img.shields.io/badge/dependencies-none-success) ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
