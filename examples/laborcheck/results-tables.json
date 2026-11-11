@@ -12,7 +12,7 @@
   ],
   "rows": [
    [
-    "`pilot-claude-closed`",
+    "`trial-claude-closed`",
     "Claude Opus 5.5",
     "仅模型",
     "开发集分层抽样（每个主题×题型 1 题）",
@@ -21,7 +21,7 @@
     "0.50"
    ],
    [
-    "`pilot-claude-tools`",
+    "`trial-claude-tools`",
     "Claude Opus 5.5",
     "模型 + 工具",
     "同上",
@@ -30,7 +30,7 @@
     "1.31"
    ],
    [
-    "`pilot-deepseek-closed`",
+    "`trial-deepseek-closed`",
     "DeepSeek-V4-Pro",
     "仅模型",
     "同上",
@@ -39,7 +39,7 @@
     "0.29"
    ],
    [
-    "`pilot-deepseek-tools`",
+    "`trial-deepseek-tools`",
     "DeepSeek-V4-Pro",
     "模型 + 工具",
     "同上",
@@ -48,7 +48,7 @@
     "0.34"
    ],
    [
-    "`pilot-qwen-closed`",
+    "`trial-qwen-closed`",
     "通义千问 Qwen3.8-Max",
     "仅模型",
     "同上",
@@ -57,7 +57,7 @@
     "0.43"
    ],
    [
-    "`pilot-qwen-tools`",
+    "`trial-qwen-tools`",
     "通义千问 Qwen3.8-Max",
     "模型 + 工具",
     "同上",
@@ -66,7 +66,7 @@
     "0.40"
    ],
    [
-    "`pilot-claude-haiku-closed`",
+    "`trial-claude-haiku-closed`",
     "Claude Haiku 5.5",
     "仅模型",
     "同上",
@@ -75,7 +75,7 @@
     "0.02"
    ],
    [
-    "`pilot-claude-haiku-tools`",
+    "`trial-claude-haiku-tools`",
     "Claude Haiku 5.5",
     "模型 + 工具",
     "同上",
@@ -191,7 +191,7 @@
   ],
   "rows": [
    [
-    "`pilot-claude-closed`",
+    "`trial-claude-closed`",
     "Claude Opus 5.5",
     "仅模型",
     "88.5%（23/26）",
@@ -203,7 +203,7 @@
     "0.5002"
    ],
    [
-    "`pilot-claude-tools`",
+    "`trial-claude-tools`",
     "Claude Opus 5.5",
     "模型 + 规则引擎工具",
     "100.0%（26/26）",
@@ -215,7 +215,7 @@
     "1.3135"
    ],
    [
-    "`pilot-deepseek-closed`",
+    "`trial-deepseek-closed`",
     "DeepSeek-V4-Pro",
     "仅模型",
     "84.6%（22/26）",
@@ -227,7 +227,7 @@
     "0.2903"
    ],
    [
-    "`pilot-deepseek-tools`",
+    "`trial-deepseek-tools`",
     "DeepSeek-V4-Pro",
     "模型 + 规则引擎工具",
     "100.0%（26/26）",
@@ -239,7 +239,7 @@
     "0.3449"
    ],
    [
-    "`pilot-qwen-closed`",
+    "`trial-qwen-closed`",
     "通义千问 Qwen3.8-Max",
     "仅模型",
     "84.6%（22/26）",
@@ -251,7 +251,7 @@
     "0.4298"
    ],
    [
-    "`pilot-qwen-tools`",
+    "`trial-qwen-tools`",
     "通义千问 Qwen3.8-Max",
     "模型 + 规则引擎工具",
     "100.0%（26/26）",
@@ -263,7 +263,7 @@
     "0.4032"
    ],
    [
-    "`pilot-claude-haiku-closed`",
+    "`trial-claude-haiku-closed`",
     "Claude Haiku 5.5",
     "仅模型",
     "80.8%（21/26）",
@@ -275,7 +275,7 @@
     "0.0176"
    ],
    [
-    "`pilot-claude-haiku-tools`",
+    "`trial-claude-haiku-tools`",
     "Claude Haiku 5.5",
     "模型 + 规则引擎工具",
     "92.3%（24/26）",

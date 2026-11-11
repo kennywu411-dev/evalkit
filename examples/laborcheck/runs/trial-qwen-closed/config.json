@@ -1,16 +1,16 @@
 {
-  "run_id": "pilot-deepseek-closed",
-  "tag": "pilot-deepseek-closed",
-  "source_run": "pilot-deepseek-closed",
+  "run_id": "trial-qwen-closed",
+  "tag": "trial-qwen-closed",
+  "source_run": "trial-qwen-closed",
   "dataset": {
     "name": "laborcheck",
     "version": "1.0.0",
     "n": 26
   },
   "variants": {
-    "deepseek-closed": {
-      "model": "deepseek-v4-pro",
-      "display": "DeepSeek-V4-Pro",
+    "qwen-closed": {
+      "model": "qwen3.8-max",
+      "display": "通义千问 Qwen3.8-Max",
       "mode": "closed",
       "effort": ""
     }

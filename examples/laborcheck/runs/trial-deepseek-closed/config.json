@@ -1,18 +1,18 @@
 {
-  "run_id": "pilot-claude-tools",
-  "tag": "pilot-claude-tools",
-  "source_run": "pilot-claude-tools",
+  "run_id": "trial-deepseek-closed",
+  "tag": "trial-deepseek-closed",
+  "source_run": "trial-deepseek-closed",
   "dataset": {
     "name": "laborcheck",
     "version": "1.0.0",
     "n": 26
   },
   "variants": {
-    "claude-tools": {
-      "model": "claude-opus-5-5",
-      "display": "Claude Opus 5.5",
-      "mode": "tools",
-      "effort": "medium"
+    "deepseek-closed": {
+      "model": "deepseek-v4-pro",
+      "display": "DeepSeek-V4-Pro",
+      "mode": "closed",
+      "effort": ""
     }
   },
   "scorers": [

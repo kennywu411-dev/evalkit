@@ -1,8 +1,8 @@
 """用 evalkit 复算合同风险审查项目 docs/numbers.md 里的关键数字。
 
     uv run python examples/contract_review/reproduce.py                    # 用仓库自带的样例
-    uv run python examples/contract_review/reproduce.py --repo ~/Documents/docpilot           # 只读原仓库
-    uv run python examples/contract_review/reproduce.py --repo ~/Documents/docpilot --export  # 刷新样例
+    uv run python examples/contract_review/reproduce.py --repo <合同审查仓库>           # 只读原仓库
+    uv run python examples/contract_review/reproduce.py --repo <合同审查仓库> --export  # 刷新样例
 
 两种口径都复算：
 1. 运行时口径：直接汇总运行时记下的逐项计数（scores["recorded"]），验证比例指标的累加方式；

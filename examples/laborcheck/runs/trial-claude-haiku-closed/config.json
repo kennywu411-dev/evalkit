@@ -1,17 +1,17 @@
 {
-  "run_id": "pilot-deepseek-tools",
-  "tag": "pilot-deepseek-tools",
-  "source_run": "pilot-deepseek-tools",
+  "run_id": "trial-claude-haiku-closed",
+  "tag": "trial-claude-haiku-closed",
+  "source_run": "trial-claude-haiku-closed",
   "dataset": {
     "name": "laborcheck",
     "version": "1.0.0",
     "n": 26
   },
   "variants": {
-    "deepseek-tools": {
-      "model": "deepseek-v4-pro",
-      "display": "DeepSeek-V4-Pro",
-      "mode": "tools",
+    "claude-haiku-closed": {
+      "model": "claude-haiku-5-5",
+      "display": "Claude Haiku 5.5",
+      "mode": "closed",
       "effort": ""
     }
   },

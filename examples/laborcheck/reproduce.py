@@ -47,8 +47,8 @@ VERSIONS = ("1.0.1", "1.0.2")
 
 # 运行 → 评测集版本；三组分别对应 results.md 的试跑、第一轮全量、主结果
 GROUPS = {
-    "pilot": [
-        f"pilot-{m}-{mode}"
+    "trial": [
+        f"trial-{m}-{mode}"
         for m in ("claude", "deepseek", "qwen", "claude-haiku")
         for mode in ("closed", "tools")
     ],
@@ -61,9 +61,9 @@ GROUPS = {
         for mode in ("closed", "tools")
     ],
 }
-RUN_VERSION = {"pilot": "1.0.0", "full": "1.0.1", "v102": "1.0.2"}
+RUN_VERSION = {"trial": "1.0.0", "full": "1.0.1", "v102": "1.0.2"}
 # results.md 的章节 → 组
-SECTION_GROUP = {"试跑结果": "pilot", "第一轮全量": "full", "主结果": "v102"}
+SECTION_GROUP = {"试跑结果": "trial", "第一轮全量": "full", "主结果": "v102"}
 SECTIONS = ("运行登记", *SECTION_GROUP)
 
 # 文档与复算不一致、且已查明原因的项：单独列出，不计入失败

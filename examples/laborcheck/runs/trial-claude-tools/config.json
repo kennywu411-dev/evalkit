@@ -1,18 +1,18 @@
 {
-  "run_id": "pilot-qwen-closed",
-  "tag": "pilot-qwen-closed",
-  "source_run": "pilot-qwen-closed",
+  "run_id": "trial-claude-tools",
+  "tag": "trial-claude-tools",
+  "source_run": "trial-claude-tools",
   "dataset": {
     "name": "laborcheck",
     "version": "1.0.0",
     "n": 26
   },
   "variants": {
-    "qwen-closed": {
-      "model": "qwen3.8-max",
-      "display": "通义千问 Qwen3.8-Max",
-      "mode": "closed",
-      "effort": ""
+    "claude-tools": {
+      "model": "claude-opus-5-5",
+      "display": "Claude Opus 5.5",
+      "mode": "tools",
+      "effort": "medium"
     }
   },
   "scorers": [
