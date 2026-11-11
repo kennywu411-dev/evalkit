@@ -3,14 +3,14 @@
 三个适配示例用 evalkit 从原项目的运行记录复算各自结果登记（`docs/numbers.md`、`docs/results.md`）里的数字，按原文精度格式化后逐字比较。本页由下面三条命令的输出整理而成，可随时重跑：
 
 ```bash
-uv run python examples/datapilot/reproduce.py
+uv run python examples/metriclens/reproduce.py
 uv run python examples/contract_review/reproduce.py
 uv run python examples/laborcheck/reproduce.py
 ```
 
-## DataPilot（NL2SQL 问数：BIRD Mini-Dev 500 题；电商经营分析 40 题 + 留出 19 题）
+## MetricLens（NL2SQL 问数：BIRD Mini-Dev 500 题；电商经营分析 40 题 + 留出 19 题）
 
-加 `--repo <DataPilot 仓库>` 时额外核对两项：evalkit 的分层抽样与原项目 20 题试跑抽到的题目相同；`SQLResultMatch` 在 100 道题上重新执行预测 SQL 与标准 SQL，判分与原记录逐题一致。
+加 `--repo <MetricLens 仓库>` 时额外核对两项：evalkit 的分层抽样与原项目 20 题试跑抽到的题目相同；`SQLResultMatch` 在 100 道题上重新执行预测 SQL 与标准 SQL，判分与原记录逐题一致。
 
 | 项目 | numbers.md | evalkit 复算 | 一致 |
 |---|---|---|---|

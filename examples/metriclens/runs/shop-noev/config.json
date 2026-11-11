@@ -1,0 +1,24 @@
+{
+  "run_id": "shop-noev",
+  "tag": "shop-noev",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 40
+  },
+  "variants": {
+    "haiku": {
+      "model": "haiku",
+      "pipeline": "e4_correct"
+    },
+    "sonnet": {
+      "model": "sonnet",
+      "pipeline": "e4_correct"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "metriclens",
+  "pipeline": "e4_correct"
+}

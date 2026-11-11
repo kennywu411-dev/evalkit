@@ -1,0 +1,24 @@
+{
+  "run_id": "hold-e4",
+  "tag": "hold-e4",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 19
+  },
+  "variants": {
+    "haiku": {
+      "model": "haiku",
+      "pipeline": "e4_correct"
+    },
+    "sonnet": {
+      "model": "sonnet",
+      "pipeline": "e4_correct"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "metriclens",
+  "pipeline": "e4_correct"
+}

@@ -1,0 +1,24 @@
+{
+  "run_id": "e3-values",
+  "tag": "e3-values",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 500
+  },
+  "variants": {
+    "haiku": {
+      "model": "haiku",
+      "pipeline": "e3_values"
+    },
+    "sonnet": {
+      "model": "sonnet",
+      "pipeline": "e3_values"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "metriclens",
+  "pipeline": "e3_values"
+}

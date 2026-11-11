@@ -1,0 +1,20 @@
+{
+  "run_id": "e4-opus",
+  "tag": "e4-opus",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 500
+  },
+  "variants": {
+    "opus": {
+      "model": "opus",
+      "pipeline": "e4_correct"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "metriclens",
+  "pipeline": "e4_correct"
+}

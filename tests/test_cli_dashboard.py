@@ -129,7 +129,7 @@ def test_slice_keys_skip_high_cardinality():
 @pytest.mark.parametrize(
     "script",
     [
-        "examples/datapilot/reproduce.py",
+        "examples/metriclens/reproduce.py",
         "examples/contract_review/reproduce.py",
         "examples/laborcheck/reproduce.py",
     ],

@@ -1,0 +1,24 @@
+{
+  "run_id": "sem-cmp",
+  "tag": "sem-cmp",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 40
+  },
+  "variants": {
+    "haiku": {
+      "model": "haiku",
+      "pipeline": "sem_compile"
+    },
+    "sonnet": {
+      "model": "sonnet",
+      "pipeline": "sem_compile"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "metriclens",
+  "pipeline": "sem_compile"
+}

@@ -1,0 +1,24 @@
+{
+  "run_id": "sem-ctx",
+  "tag": "sem-ctx",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 40
+  },
+  "variants": {
+    "haiku": {
+      "model": "haiku",
+      "pipeline": "sem_context"
+    },
+    "sonnet": {
+      "model": "sonnet",
+      "pipeline": "sem_context"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "metriclens",
+  "pipeline": "sem_context"
+}

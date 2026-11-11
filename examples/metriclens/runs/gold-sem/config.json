@@ -1,0 +1,20 @@
+{
+  "run_id": "gold-sem",
+  "tag": "gold-sem",
+  "dataset": {
+    "name": "bird-minidev",
+    "n": 40
+  },
+  "variants": {
+    "gold": {
+      "model": "gold",
+      "pipeline": "sem_context"
+    }
+  },
+  "scorers": [
+    "execution_match"
+  ],
+  "primary_metric": "execution_match",
+  "imported_from": "metriclens",
+  "pipeline": "sem_context"
+}
